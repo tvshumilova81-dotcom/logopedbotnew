@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    container_name: logoped_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./media:/app/media
+      - ./articles:/app/articles
+    # Раскомментируйте, если переходите на PostgreSQL:
+    # depends_on:
+    #   - db
+
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: logoped_bot_db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: logoped
+  #     POSTGRES_PASSWORD: logoped
+  #     POSTGRES_DB: logoped_bot
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+
+# volumes:
+#   pgdata:
