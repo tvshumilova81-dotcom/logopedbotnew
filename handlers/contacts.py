@@ -11,8 +11,8 @@ router = Router(name="contacts")
 @router.message(F.text == MENU_CONTACTS)
 async def show_contacts(message: Message) -> None:
     builder = InlineKeyboardBuilder()
-    builder.button(text="📷 Instagram", url=settings.https://www.instagram.com/tatyana.logopedworld?igsh=b2tqMDJoZXZnZzZw&utm_source=qr)
-    builder.button(text="📢 Telegram-канал", url=settings.https://t.me/logopedonlinetatiyana)
+    builder.button(text="📷 Instagram", url="https://www.instagram.com/tatyana.logopedworld?igsh=b2tqMDJoZXZnZzZw&utm_source=qr")
+    builder.button(text="📢 Telegram-канал", url="https://t.me/logopedonlinetatiyana")
     builder.adjust(1)
     await message.answer(
         "📩 <b>Контакты</b>\n\n"
