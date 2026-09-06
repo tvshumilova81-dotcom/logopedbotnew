@@ -13,6 +13,7 @@ const State = {
   me: null,
   countries: [],
   selectedCountry: null,
+  countryReturnScreen: "book-calendar",
   cal: { year: new Date().getFullYear(), month: new Date().getMonth() + 1 },
   selectedDate: null,
   selectedTime: null,
@@ -62,8 +63,8 @@ const Nav = {
     if (target) target.classList.add("active");
 
     document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-    const navMap = { "home": "home", "book-calendar": "book-calendar", "book-country": "book-calendar", "book-success": "book-calendar", "materials": "materials", "profile": "profile", "payment": "profile", "history": "home" };
-    const navKey = navMap[screen];
+    const navMap = { "home": "home", "book-calendar": "book-calendar", "book-success": "book-calendar", "materials": "materials", "profile": "profile", "payment": "profile", "history": "home", "consultation": "home" };
+    const navKey = screen === "book-country" ? (State.countryReturnScreen === "profile" ? "profile" : "book-calendar") : navMap[screen];
     if (navKey) {
       const btn = document.querySelector('.nav-btn[data-tab="' + navKey + '"]');
       if (btn) btn.classList.add("active");
@@ -73,7 +74,13 @@ const Nav = {
     if (screen === "book-calendar") Calendar.render();
     if (screen === "history") History.load();
     if (screen === "materials") Materials.load();
-    if (screen === "profile") Profile.fill();
+    if (screen === "profile") {
+      if (State.skipProfileFill) {
+        State.skipProfileFill = false;
+      } else {
+        Profile.fill();
+      }
+    }
 
     if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.selectionChanged(); } catch (e) {} }
   },
@@ -88,14 +95,13 @@ async function loadMe() {
     console.error(e);
     return;
   }
-  document.getElementById("home-name").textContent = State.me.parent_name || "друг";
   document.getElementById("stat-lessons").textContent = State.me.stats.lessons_done;
   document.getElementById("stat-materials").textContent = State.me.stats.materials;
 
   const nextEl = document.getElementById("home-next-lesson");
   if (State.me.next_booking) {
     const b = State.me.next_booking;
-    nextEl.style.display = "inline-flex";
+    nextEl.style.display = "flex";
     nextEl.textContent = "🗓 Ближайшее занятие: " + formatDateHuman(b.date) + ", " + b.time;
   } else {
     nextEl.style.display = "none";
@@ -151,7 +157,8 @@ const Booking = {
           State.selectedCountry = c;
           document.getElementById("book-country-label").textContent = c.name;
           document.getElementById("profile-country-label").textContent = c.name + " (" + c.tz_label + ")";
-          Nav.go("book-calendar");
+          if (State.countryReturnScreen === "profile") State.skipProfileFill = true;
+          Nav.go(State.countryReturnScreen || "book-calendar");
         };
         list.appendChild(row);
       });
@@ -244,6 +251,7 @@ const Calendar = {
       const past = d.date < todayStr;
       const disabled = past || !d.has_free;
       cell.className = "day-cell" + (disabled ? " disabled" : "") + (d.date === State.selectedDate ? " selected" : "");
+      cell.dataset.date = d.date;
       cell.innerHTML = dayNum + (d.has_free && !past ? '<span class="dot"></span>' : "");
       if (!disabled) cell.onclick = () => Calendar.selectDay(d.date);
       grid.appendChild(cell);
@@ -266,18 +274,23 @@ const Calendar = {
   },
 
   async selectDay(dateStr) {
+    const changingDay = State.selectedDate !== dateStr;
     State.selectedDate = dateStr;
-    State.selectedTime = null;
-    Calendar.render();
+    if (changingDay) State.selectedTime = null;
+
+    // Подсвечиваем выбранный день в сетке месяца без повторного запроса к серверу
+    document.querySelectorAll("#cal-grid .day-cell").forEach((cell) => {
+      cell.classList.toggle("selected", cell.dataset.date === dateStr);
+    });
 
     const card = document.getElementById("time-card");
     card.style.display = "block";
     document.getElementById("time-card-title").textContent = "Доступное время на " + formatDateHuman(dateStr);
-    const grid = document.getElementById("time-grid");
-    grid.innerHTML = '<div class="loader">Загрузка…</div>';
 
     let slots = State.slotsCache[dateStr];
     if (!slots) {
+      const grid = document.getElementById("time-grid");
+      grid.innerHTML = '<div class="loader">Загрузка…</div>';
       try {
         slots = await api("/slots?date=" + dateStr);
         State.slotsCache[dateStr] = slots;
@@ -288,6 +301,20 @@ const Calendar = {
       }
     }
 
+    Calendar.renderTimeGrid(dateStr, slots);
+
+    if (State.selectedTime) {
+      document.getElementById("topic-field").style.display = "block";
+      document.getElementById("btn-confirm-slot").style.display = "block";
+    } else {
+      document.getElementById("topic-field").style.display = "none";
+      document.getElementById("btn-confirm-slot").style.display = "none";
+    }
+  },
+
+  renderTimeGrid(dateStr, slots) {
+    slots = slots || State.slotsCache[dateStr] || [];
+    const grid = document.getElementById("time-grid");
     grid.innerHTML = "";
     if (!slots.length) {
       grid.innerHTML = '<div class="empty-state">На этот день нет доступного времени</div>';
@@ -300,7 +327,7 @@ const Calendar = {
       if (s.status === "free") {
         chip.onclick = () => {
           State.selectedTime = s.time;
-          Calendar.selectDay(dateStr);
+          Calendar.renderTimeGrid(dateStr, slots);
           document.getElementById("topic-field").style.display = "block";
           document.getElementById("btn-confirm-slot").style.display = "block";
         };
@@ -466,6 +493,27 @@ const Profile = {
       loadMe();
     } catch (e) {
       UI.toast("Не удалось сохранить");
+    }
+  },
+};
+
+/* ==================== КОНСУЛЬТАЦИЯ ==================== */
+
+const Consultation = {
+  async send() {
+    const textEl = document.getElementById("consultation-text");
+    const text = textEl.value.trim();
+    if (!text) {
+      UI.toast("Напишите сообщение");
+      return;
+    }
+    try {
+      await api("/consultation", { method: "POST", body: JSON.stringify({ text }) });
+      UI.toast("Отправлено! Я скоро отвечу вам в Telegram");
+      textEl.value = "";
+      Nav.go("home");
+    } catch (e) {
+      UI.toast("Не удалось отправить, попробуйте ещё раз");
     }
   },
 };

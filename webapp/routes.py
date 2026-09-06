@@ -14,7 +14,11 @@ from services.article_service import get_article, list_articles
 from services.material_service import list_active_materials, user_purchases
 from services.geo_data import COUNTRIES
 from services.miniapp_auth import validate_init_data
-from services.notify_admin import notify_miniapp_cancel, notify_new_miniapp_booking
+from services.notify_admin import (
+    notify_consultation_request,
+    notify_miniapp_cancel,
+    notify_new_miniapp_booking,
+)
 from services.user_service import get_or_create_user_by_id
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -128,6 +132,19 @@ async def api_update_profile(request: web.Request) -> web.Response:
         await session.commit()
         await session.refresh(db_user)
 
+    return web.json_response({"ok": True})
+
+
+@routes.post("/api/miniapp/consultation")
+async def api_consultation(request: web.Request) -> web.Response:
+    user, _tg_data = await _authenticate(request)
+    body = await request.json()
+    text = (body.get("text") or "").strip()
+    if not text:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "text_required"}))
+
+    bot = request.app["bot"]
+    await notify_consultation_request(bot, user, text)
     return web.json_response({"ok": True})
 
 
