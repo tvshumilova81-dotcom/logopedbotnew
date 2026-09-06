@@ -86,6 +86,36 @@ async def notify_new_purchase(bot: Bot, user: User, material: Material) -> None:
             logger.exception("Не удалось отправить уведомление админу %s", admin_id)
 
 
+async def notify_lead_magnet_download(bot: Bot, user: User) -> None:
+    text = (
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "📄 <b>Скачан лид-магнит «Речь за 7 минут»</b>\n\n"
+        f"👤 {user.display_name()}\n"
+        f"🆔 Telegram ID: {user.telegram_id}\n"
+        "━━━━━━━━━━━━━━━━━━━━"
+    )
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.send_message(admin_id, text)
+        except TelegramAPIError:
+            logger.exception("Не удалось отправить уведомление админу %s", admin_id)
+
+
+async def notify_diagnostic_click(bot: Bot, user: User) -> None:
+    text = (
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "🩺 <b>Запрос по слову «Диагностика»</b>\n\n"
+        f"👤 {user.display_name()}\n"
+        f"🆔 Telegram ID: {user.telegram_id}\n"
+        "━━━━━━━━━━━━━━━━━━━━"
+    )
+    for admin_id in settings.admin_ids:
+        try:
+            await bot.send_message(admin_id, text)
+        except TelegramAPIError:
+            logger.exception("Не удалось отправить уведомление админу %s", admin_id)
+
+
 def format_questionnaire(user: User, q: Questionnaire) -> str:
     def lbl(value: str | None) -> str:
         if value is None:

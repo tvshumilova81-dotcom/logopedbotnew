@@ -13,7 +13,19 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 
 from config.settings import settings
 from database.engine import init_db
-from handlers import about, booking, contacts, faq, materials, price_guard, profile, purchases, questionnaire, start
+from handlers import (
+    about,
+    booking,
+    contacts,
+    faq,
+    leadmagnet,
+    materials,
+    price_guard,
+    profile,
+    purchases,
+    questionnaire,
+    start,
+)
 from handlers.admin import admin_router
 from middlewares.db import DbSessionMiddleware
 from middlewares.logging import ErrorLoggingMiddleware
@@ -37,6 +49,7 @@ def build_dispatcher() -> Dispatcher:
     dp.include_router(admin_router)
     dp.include_router(start.router)
     dp.include_router(booking.router)
+    dp.include_router(leadmagnet.router)
     dp.include_router(questionnaire.router)
     dp.include_router(about.router)
     dp.include_router(materials.router)
