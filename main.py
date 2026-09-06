@@ -32,6 +32,7 @@ from middlewares.logging import ErrorLoggingMiddleware
 from middlewares.throttling import ThrottlingMiddleware
 from services.seed import seed_default_materials
 from utils.logger import setup_logging
+from webapp.routes import routes as webapp_routes
 
 logger = logging.getLogger("bot.main")
 
@@ -62,9 +63,38 @@ def build_dispatcher() -> Dispatcher:
     return dp
 
 
+def build_web_app(bot: Bot) -> web.Application:
+    """aiohttp-приложение: health-check + статика и API мини-приложения.
+
+    Работает и в режиме webhook (тогда сюда же добавляется вебхук-хендлер),
+    и в режиме polling (тогда просто поднимается отдельно, чтобы мини-апп
+    был доступен по адресу WEBAPP_URL).
+    """
+    app = web.Application()
+    app["bot"] = bot
+
+    async def health(_request: web.Request) -> web.Response:
+        # Render дёргает "/", чтобы понять, что сервис жив
+        return web.Response(text="ok")
+
+    app.router.add_get("/", health)
+    app.add_routes(webapp_routes)
+
+    return app
+
+
 async def run_polling(bot: Bot, dp: Dispatcher) -> None:
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("Бот запущен в режиме polling")
+
+    app = build_web_app(bot)
+    port = int(os.environ.get("PORT", settings.PORT))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, host="0.0.0.0", port=port)
+    await site.start()
+    logger.info("HTTP-сервер (мини-апп) слушает порт %s", port)
+
     await dp.start_polling(bot)
 
 
@@ -78,13 +108,7 @@ async def run_webhook(bot: Bot, dp: Dispatcher) -> None:
     )
     logger.info("Бот запущен в режиме webhook: %s", webhook_url)
 
-    app = web.Application()
-
-    async def health(_request: web.Request) -> web.Response:
-        # Render дёргает "/", чтобы понять, что сервис жив
-        return web.Response(text="ok")
-
-    app.router.add_get("/", health)
+    app = build_web_app(bot)
 
     SimpleRequestHandler(
         dispatcher=dp,
@@ -106,6 +130,24 @@ async def run_webhook(bot: Bot, dp: Dispatcher) -> None:
     await asyncio.Event().wait()
 
 
+async def setup_menu_button(bot: Bot) -> None:
+    """Ставит кнопку 'Меню' рядом с полем ввода, открывающую мини-приложение."""
+    if not settings.WEBAPP_URL:
+        return
+    try:
+        from aiogram.types import MenuButtonWebApp, WebAppInfo
+
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="Записаться",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL),
+            )
+        )
+        logger.info("Кнопка мини-приложения установлена: %s", settings.WEBAPP_URL)
+    except Exception:
+        logger.exception("Не удалось установить кнопку мини-приложения")
+
+
 async def main() -> None:
     setup_logging()
     logger.info("Запуск бота...")
@@ -118,6 +160,8 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = build_dispatcher()
+
+    await setup_menu_button(bot)
 
     if settings.use_webhook:
         await run_webhook(bot, dp)

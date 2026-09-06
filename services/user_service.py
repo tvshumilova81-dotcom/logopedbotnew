@@ -8,20 +8,26 @@ from database.models.user import User
 
 
 async def get_or_create_user(session: AsyncSession, tg_user: TgUser) -> User:
+    return await get_or_create_user_by_id(session, tg_user.id, tg_user.username)
+
+
+async def get_or_create_user_by_id(
+    session: AsyncSession, telegram_id: int, username: str | None
+) -> User:
     result = await session.execute(
-        select(User).where(User.telegram_id == tg_user.id)
+        select(User).where(User.telegram_id == telegram_id)
     )
     user = result.scalar_one_or_none()
     if user is None:
         user = User(
-            telegram_id=tg_user.id,
-            username=tg_user.username,
+            telegram_id=telegram_id,
+            username=username,
         )
         session.add(user)
         await session.commit()
         await session.refresh(user)
-    elif user.username != tg_user.username:
-        user.username = tg_user.username
+    elif username and user.username != username:
+        user.username = username
         await session.commit()
     return user
 

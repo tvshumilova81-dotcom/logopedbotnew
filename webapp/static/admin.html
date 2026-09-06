@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Админ-панель · Татьяна Шумилова</title>
+<link rel="stylesheet" href="/webapp/static/styles.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<div class="app" id="app-root">
+
+  <div id="access-denied" class="access-denied" style="display:none">
+    <div style="font-size:40px;margin-bottom:10px">🔒</div>
+    <div>Эта страница доступна только администратору</div>
+  </div>
+
+  <div id="admin-content" style="display:none">
+
+    <section class="screen active" id="screen-schedule">
+      <div class="topbar"><div class="title">Моё расписание</div><div></div></div>
+      <p style="color:var(--muted);font-size:12.5px;margin:0 0 12px">Нажмите на свободное время, чтобы закрыть его (например, если вы заняты) — клиенты не смогут его выбрать. Повторное нажатие снова откроет время.</p>
+
+      <div class="card">
+        <div class="calendar-head">
+          <button class="calendar-nav" onclick="AdminCal.prevMonth()">‹</button>
+          <div class="month-label" id="a-cal-month-label"></div>
+          <button class="calendar-nav" onclick="AdminCal.nextMonth()">›</button>
+        </div>
+        <div class="calendar-grid" id="a-cal-grid"></div>
+      </div>
+
+      <div class="card" id="a-day-card" style="display:none">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px" id="a-day-title"></div>
+        <div id="a-day-slots"></div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-income">
+      <div class="topbar"><div class="title">Доход</div><div></div></div>
+
+      <div class="card income-total">
+        <div class="amount" id="income-amount">0 ₽</div>
+        <div class="lbl">Общий доход</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Скорректировать доход</div>
+        <div class="field"><label>Сумма (можно с минусом)</label><input id="adj-amount" type="number" placeholder="Например, 5000 или -1000" /></div>
+        <div class="field"><label>Комментарий</label><input id="adj-comment" placeholder="За что / почему корректировка" /></div>
+        <button class="btn btn-primary" onclick="Income.addAdjustment()">Добавить корректировку</button>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px">История корректировок</div>
+        <div id="adjustments-list"><div class="loader">Загрузка…</div></div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav" id="admin-nav" style="display:none">
+    <button class="nav-btn active" data-tab="schedule" onclick="AdminNav.go('schedule')"><span class="ic">🗓</span>Расписание</button>
+    <button class="nav-btn" data-tab="income" onclick="AdminNav.go('income')"><span class="ic">💰</span>Доход</button>
+  </nav>
+</div>
+
+<script src="/webapp/static/admin.js"></script>
+</body>
+</html>
