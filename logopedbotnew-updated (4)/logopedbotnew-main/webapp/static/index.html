@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Логопед Татьяна Шумилова</title>
+<link rel="stylesheet" href="/webapp/static/styles.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ==================== ГЛАВНАЯ ==================== -->
+  <section class="screen active" id="screen-home">
+    <div class="topbar"><div class="title">Главная</div><div></div></div>
+
+    <div class="hero-card">
+      <div class="hero-text">
+        <div class="hero-greeting">Здравствуйте! 👋</div>
+        <h1>Я — Татьяна Шумилова</h1>
+        <div class="hero-subtitle">Логопед-нейрокоррекция</div>
+        <ul class="hero-checks">
+          <li>✅ Опыт более 10 лет</li>
+          <li>✅ Более 500 успешных кейсов</li>
+          <li>✅ Онлайн-занятия для детей и взрослых</li>
+        </ul>
+      </div>
+      <div class="hero-photo"><img src="/webapp/static/images/tatiana.jpg" alt="Татьяна Шумилова" /></div>
+    </div>
+
+    <div id="home-next-lesson" class="pill-lesson" style="display:none"></div>
+
+    <button class="btn btn-primary" onclick="Nav.go('book-calendar')" style="margin-bottom:10px">🗓 Записаться на занятие</button>
+    <button class="btn btn-secondary" onclick="Nav.go('consultation')" style="margin-bottom:16px">💬 Получить консультацию</button>
+
+    <div class="section-label">Как я работаю</div>
+    <div class="how-grid">
+      <div class="how-item"><span class="ic">🎯</span>Индивидуальный подход</div>
+      <div class="how-item"><span class="ic">🧠</span>Нейрокоррекция</div>
+      <div class="how-item"><span class="ic">📈</span>Реальный результат</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box"><div class="num" id="stat-lessons">0</div><div class="lbl">Занятий</div></div>
+      <div class="stat-box"><div class="num" id="stat-materials">0</div><div class="lbl">Материалы</div></div>
+      <div class="stat-box"><div class="num">💬</div><div class="lbl">Онлайн</div></div>
+    </div>
+
+    <div class="action-item" onclick="Nav.go('history')">
+      <div class="icon green">📖</div>
+      <div class="body"><strong>История занятий</strong><span>Все ваши записи</span></div>
+      <div class="arrow">›</div>
+    </div>
+    <div class="action-item" onclick="Nav.go('materials')">
+      <div class="icon orange">📚</div>
+      <div class="body"><strong>Материалы</strong><span>Купленные и бесплатные</span></div>
+      <div class="arrow">›</div>
+    </div>
+  </section>
+
+  <!-- ==================== КОНСУЛЬТАЦИЯ ==================== -->
+  <section class="screen" id="screen-consultation">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">Консультация</div><div style="width:34px"></div></div>
+    <div class="card">
+      <div style="font-size:13.5px;color:var(--muted);margin-bottom:12px">Задайте вопрос или опишите ситуацию — я отвечу вам в Telegram в ближайшее время.</div>
+      <div class="field"><textarea id="consultation-text" placeholder="Например: ребёнку 4 года, не выговаривает Р, подскажите с чего начать" style="min-height:110px"></textarea></div>
+      <button class="btn btn-primary" onclick="Consultation.send()">Отправить</button>
+    </div>
+  </section>
+
+  <!-- ==================== ВЫБОР СТРАНЫ ==================== -->
+  <section class="screen" id="screen-book-country">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">Выбор страны</div><div style="width:34px"></div></div>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Это поможет показать удобное время для вашего часового пояса</p>
+    <input class="search-input" id="country-search" placeholder="Поиск страны..." oninput="Booking.renderCountries()" />
+    <div id="country-list"></div>
+  </section>
+
+  <!-- ==================== КАЛЕНДАРЬ ==================== -->
+  <section class="screen" id="screen-book-calendar">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">Выбор даты и времени</div><div style="width:34px"></div></div>
+
+    <div class="card-flat" id="book-country-chip" style="margin-bottom:14px;cursor:pointer" onclick="State.countryReturnScreen='book-calendar';Nav.go('book-country')">
+      🌍 Страна: <b id="book-country-label">не выбрана</b> · изменить
+    </div>
+
+    <div class="card">
+      <div class="calendar-head">
+        <button class="calendar-nav" onclick="Calendar.prevMonth()">‹</button>
+        <div class="month-label" id="cal-month-label"></div>
+        <button class="calendar-nav" onclick="Calendar.nextMonth()">›</button>
+      </div>
+      <div class="calendar-grid" id="cal-grid"></div>
+    </div>
+
+    <div class="card" id="time-card" style="display:none">
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px" id="time-card-title">Доступное время</div>
+      <div class="time-grid" id="time-grid"></div>
+    </div>
+
+    <div class="field" id="topic-field" style="display:none;margin-top:14px">
+      <label>Что хотите обсудить на занятии? (необязательно)</label>
+      <textarea id="topic-input" placeholder="Например: постановка звука Р"></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="btn-confirm-slot" style="display:none;margin-top:6px" onclick="Booking.confirm()">Подтвердить запись</button>
+  </section>
+
+  <!-- ==================== ПОДТВЕРЖДЕНИЕ ==================== -->
+  <section class="screen" id="screen-book-success">
+    <div class="topbar"><div></div><div class="title">Подтверждение записи</div><div style="width:34px"></div></div>
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <h2>Запись подтверждена!</h2>
+      <p style="color:var(--muted);font-size:13.5px">Мы с вами свяжемся и напомним о занятии заранее.</p>
+    </div>
+    <div class="card" id="success-details"></div>
+    <button class="btn btn-primary" onclick="Nav.go('home')">Готово</button>
+  </section>
+
+  <!-- ==================== ИСТОРИЯ ==================== -->
+  <section class="screen" id="screen-history">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">История занятий</div><div style="width:34px"></div></div>
+    <div class="tabs">
+      <button class="active" id="tab-upcoming" onclick="History.switchTab('upcoming')">Предстоящие</button>
+      <button id="tab-past" onclick="History.switchTab('past')">Прошедшие</button>
+    </div>
+    <div id="history-list"><div class="loader">Загрузка…</div></div>
+  </section>
+
+  <!-- ==================== МАТЕРИАЛЫ ==================== -->
+  <section class="screen" id="screen-materials">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">Материалы</div><div style="width:34px"></div></div>
+    <div class="tabs">
+      <button class="active" id="tab-purchased" onclick="Materials.switchTab('purchased')">Купленные</button>
+      <button id="tab-free" onclick="Materials.switchTab('free')">Бесплатные</button>
+      <button id="tab-paid" onclick="Materials.switchTab('paid')">Ещё материалы</button>
+    </div>
+    <div id="materials-list"><div class="loader">Загрузка…</div></div>
+  </section>
+
+  <!-- ==================== ПРОФИЛЬ ==================== -->
+  <section class="screen" id="screen-profile">
+    <div class="topbar"><div class="title">Профиль и настройки</div><div></div></div>
+    <div class="avatar-lg">🙂</div>
+    <div class="field"><label>Имя родителя</label><input id="p-parent-name" placeholder="Как вас зовут" /></div>
+    <div class="field"><label>Имя ребёнка</label><input id="p-child-name" placeholder="Имя ребёнка" /></div>
+    <div class="field"><label>Возраст ребёнка</label><input id="p-child-age" placeholder="Например, 5 лет" /></div>
+    <div class="field">
+      <label>Пол ребёнка</label>
+      <select id="p-child-gender">
+        <option value="">Не указано</option>
+        <option value="Мальчик">Мальчик</option>
+        <option value="Девочка">Девочка</option>
+      </select>
+    </div>
+    <div class="card-flat" style="margin-bottom:14px;cursor:pointer" onclick="State.countryReturnScreen='profile';Nav.go('book-country')">
+      🌍 Страна и часовой пояс: <b id="profile-country-label">не выбрано</b> · изменить
+    </div>
+    <button class="btn btn-primary" onclick="Profile.save()">Сохранить изменения</button>
+
+    <div style="margin-top:18px">
+      <div class="action-item" onclick="Nav.go('payment')">
+        <div class="icon pink">💳</div>
+        <div class="body"><strong>Способы оплаты</strong><span>Управление оплатой занятий</span></div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ОПЛАТА ==================== -->
+  <section class="screen" id="screen-payment">
+    <div class="topbar"><button class="back" onclick="Nav.go('profile')">←</button><div class="title">Способы оплаты</div><div style="width:34px"></div></div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Стоимость и способ оплаты занятия согласовываются индивидуально после записи.</div>
+      <div class="action-item" style="cursor:default">
+        <div class="icon pink">💬</div>
+        <div class="body"><strong>Написать логопеду</strong><span>Обсудить оплату в Telegram</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Нижняя навигация -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home" onclick="Nav.go('home')"><span class="ic">🏠</span>Главная</button>
+    <button class="nav-btn" data-tab="book-calendar" onclick="Nav.go('book-calendar')"><span class="ic">🗓</span>Запись</button>
+    <button class="nav-btn" data-tab="materials" onclick="Nav.go('materials')"><span class="ic">📚</span>Материалы</button>
+    <button class="nav-btn" data-tab="profile" onclick="Nav.go('profile')"><span class="ic">👤</span>Профиль</button>
+  </nav>
+
+  <div class="modal-overlay" id="article-modal" onclick="if(event.target===this) UI.closeModal()">
+    <div class="modal-sheet">
+      <h2 id="article-modal-title"></h2>
+      <div class="content" id="article-modal-content"></div>
+      <button class="btn btn-secondary" style="margin-top:14px" onclick="UI.closeModal()">Закрыть</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="/webapp/static/app.js"></script>
+</body>
+</html>
