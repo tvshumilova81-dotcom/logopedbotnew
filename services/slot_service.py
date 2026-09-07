@@ -141,6 +141,30 @@ async def cancel_booking(session: AsyncSession, booking_id: int) -> bool:
     return True
 
 
+async def add_custom_slot(session: AsyncSession, date_str: str, time_str: str) -> TimeSlot | None:
+    """Добавляет отдельный тайм-слот вне стандартного шаблона (например, в выходной)."""
+    existing = await get_slot(session, date_str, time_str)
+    if existing is not None:
+        return None
+    slot = TimeSlot(date=date_str, time=time_str, status=SlotStatus.FREE)
+    session.add(slot)
+    await session.commit()
+    await session.refresh(slot)
+    return slot
+
+
+async def delete_slot(session: AsyncSession, date_str: str, time_str: str) -> bool:
+    """Полностью удаляет слот из расписания (если он не занят клиентом)."""
+    slot = await get_slot(session, date_str, time_str)
+    if slot is None:
+        return False
+    if slot.status == SlotStatus.BOOKED:
+        return False
+    await session.delete(slot)
+    await session.commit()
+    return True
+
+
 async def get_user_bookings(session: AsyncSession, user_id: int) -> list[MiniAppBooking]:
     result = await session.execute(
         select(MiniAppBooking)
