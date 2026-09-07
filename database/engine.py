@@ -23,6 +23,7 @@ async def init_db() -> None:
             booking,
             income,
             material,
+            progress,
             purchase,
             questionnaire,
             slot,
