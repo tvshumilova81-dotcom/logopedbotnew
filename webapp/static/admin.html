@@ -33,7 +33,39 @@
       <div class="card" id="a-day-card" style="display:none">
         <div style="font-weight:700;font-size:14px;margin-bottom:10px" id="a-day-title"></div>
         <div id="a-day-slots"></div>
+        <div class="add-slot-row">
+          <input type="time" id="a-new-time" step="600" />
+          <button class="btn btn-primary btn-sm" onclick="AdminCal.addSlot()">+ Добавить время</button>
+        </div>
       </div>
+    </section>
+
+    <section class="screen" id="screen-clients">
+      <div class="topbar"><div class="title">Клиенты</div><div></div></div>
+      <input class="search-input" id="client-search" placeholder="Поиск по имени..." oninput="Clients.search()" />
+      <div id="clients-list"><div class="loader">Загрузка…</div></div>
+    </section>
+
+    <section class="screen" id="screen-client-detail">
+      <div class="topbar"><button class="back" onclick="AdminNav.go('clients')">←</button><div class="title" id="client-detail-title">Клиент</div><div style="width:34px"></div></div>
+
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Добавить динамику (было → стало)</div>
+        <div class="field"><label>Название</label><input id="pn-title" placeholder="Например: постановка звука Р" /></div>
+        <div class="field"><label>Было</label><input id="pn-before" placeholder="Например: звук отсутствовал" /></div>
+        <div class="field"><label>Стало</label><input id="pn-after" placeholder="Например: звук автоматизирован в речи" /></div>
+        <div class="field"><label>Комментарий (необязательно)</label><textarea id="pn-note" placeholder="Дополнительные заметки"></textarea></div>
+        <button class="btn btn-primary btn-sm" onclick="Clients.addProgress()">Добавить запись</button>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Задать домашнее задание</div>
+        <div class="field"><textarea id="hw-text" placeholder="Например: повторять слова со звуком Р по 5 минут в день"></textarea></div>
+        <button class="btn btn-primary btn-sm" onclick="Clients.addHomework()">Отправить задание</button>
+      </div>
+
+      <div class="section-label">История</div>
+      <div id="client-detail-list"><div class="loader">Загрузка…</div></div>
     </section>
 
     <section class="screen" id="screen-income">
@@ -59,8 +91,9 @@
   </div>
 
   <nav class="bottom-nav" id="admin-nav" style="display:none">
-    <button class="nav-btn active" data-tab="schedule" onclick="AdminNav.go('schedule')"><span class="ic">🗓</span>Расписание</button>
-    <button class="nav-btn" data-tab="income" onclick="AdminNav.go('income')"><span class="ic">💰</span>Доход</button>
+    <button class="nav-btn active" data-tab="schedule" onclick="AdminNav.go('schedule')"><img class="nav-ic" src="/webapp/static/images/icons/icon-calendar.png" alt="" />Расписание</button>
+    <button class="nav-btn" data-tab="clients" onclick="AdminNav.go('clients')"><img class="nav-ic" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" />Клиенты</button>
+    <button class="nav-btn" data-tab="income" onclick="AdminNav.go('income')"><img class="nav-ic" src="/webapp/static/images/icons/icon-chart-check.png" alt="" />Доход</button>
   </nav>
 </div>
 

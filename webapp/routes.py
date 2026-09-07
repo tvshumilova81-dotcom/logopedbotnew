@@ -9,17 +9,20 @@ from aiohttp import web
 
 from config.settings import settings
 from database.engine import async_session_maker
-from services import income_service, slot_service
+from database.models.user import User
+from services import income_service, progress_service, slot_service
 from services.article_service import get_article, list_articles
 from services.material_service import list_active_materials, user_purchases
 from services.geo_data import COUNTRIES
 from services.miniapp_auth import validate_init_data
 from services.notify_admin import (
     notify_consultation_request,
+    notify_homework_added,
     notify_miniapp_cancel,
     notify_new_miniapp_booking,
+    notify_progress_added,
 )
-from services.user_service import get_or_create_user_by_id
+from services.user_service import get_or_create_user_by_id, list_users
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -275,6 +278,57 @@ async def api_history(request: web.Request) -> web.Response:
     )
 
 
+# ==================== Прогресс и домашние задания ====================
+
+def _serialize_progress(n) -> dict:
+    return {
+        "id": n.id,
+        "title": n.title,
+        "before_text": n.before_text,
+        "after_text": n.after_text,
+        "note": n.note,
+        "created_at": n.created_at.isoformat(),
+    }
+
+
+def _serialize_homework(h) -> dict:
+    return {
+        "id": h.id,
+        "text": h.text,
+        "is_done": h.is_done,
+        "created_at": h.created_at.isoformat(),
+    }
+
+
+@routes.get("/api/miniapp/progress")
+async def api_progress(request: web.Request) -> web.Response:
+    user, _tg_data = await _authenticate(request)
+    async with async_session_maker() as session:
+        notes = await progress_service.get_progress_notes(session, user.id)
+        homework = await progress_service.get_homework(session, user.id)
+
+    return web.json_response(
+        {
+            "notes": [_serialize_progress(n) for n in notes],
+            "homework": [_serialize_homework(h) for h in homework],
+        }
+    )
+
+
+@routes.post("/api/miniapp/homework/toggle")
+async def api_homework_toggle(request: web.Request) -> web.Response:
+    user, _tg_data = await _authenticate(request)
+    body = await request.json()
+    homework_id = body.get("id")
+
+    async with async_session_maker() as session:
+        hw = await progress_service.toggle_homework(session, homework_id, user.id)
+
+    if hw is None:
+        raise web.HTTPNotFound()
+    return web.json_response({"ok": True, "is_done": hw.is_done})
+
+
 # ==================== Материалы ====================
 
 @routes.get("/api/miniapp/materials")
@@ -437,3 +491,154 @@ async def api_admin_income_adjust(request: web.Request) -> web.Response:
         total = await income_service.get_total_income(session)
 
     return web.json_response({"ok": True, "total": total})
+
+
+@routes.post("/api/miniapp/admin/slots/add")
+async def api_admin_slots_add(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    date_str, time_str = body.get("date"), body.get("time")
+    if not date_str or not time_str:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "date_and_time_required"}))
+
+    async with async_session_maker() as session:
+        slot = await slot_service.add_custom_slot(session, date_str, time_str)
+
+    if slot is None:
+        raise web.HTTPConflict(text=json.dumps({"error": "slot_already_exists"}))
+
+    return web.json_response({"ok": True})
+
+
+@routes.post("/api/miniapp/admin/slots/delete")
+async def api_admin_slots_delete(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    date_str, time_str = body.get("date"), body.get("time")
+    if not date_str or not time_str:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "date_and_time_required"}))
+
+    async with async_session_maker() as session:
+        ok = await slot_service.delete_slot(session, date_str, time_str)
+
+    if not ok:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "cannot_delete"}))
+
+    return web.json_response({"ok": True})
+
+
+# ==================== Админ: клиенты, прогресс, домашние задания ====================
+
+@routes.get("/api/miniapp/admin/clients")
+async def api_admin_clients(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    search = request.query.get("q")
+
+    async with async_session_maker() as session:
+        users = await list_users(session, search=search)
+
+    return web.json_response(
+        [
+            {
+                "id": u.id,
+                "parent_name": u.parent_name,
+                "child_name": u.child_name,
+                "child_age": u.child_age,
+                "username": u.username,
+                "display_name": u.display_name(),
+            }
+            for u in users
+        ]
+    )
+
+
+@routes.get("/api/miniapp/admin/clients/{user_id}/progress")
+async def api_admin_client_progress(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    user_id = int(request.match_info["user_id"])
+
+    async with async_session_maker() as session:
+        notes = await progress_service.get_progress_notes(session, user_id)
+        homework = await progress_service.get_homework(session, user_id)
+        bookings = await slot_service.get_user_bookings(session, user_id)
+
+    return web.json_response(
+        {
+            "notes": [_serialize_progress(n) for n in notes],
+            "homework": [_serialize_homework(h) for h in homework],
+            "bookings": [_serialize_booking(b) for b in bookings],
+        }
+    )
+
+
+@routes.post("/api/miniapp/admin/progress/add")
+async def api_admin_progress_add(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    user_id = body.get("user_id")
+    title = (body.get("title") or "").strip()
+    if not user_id or not title:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "user_id_and_title_required"}))
+
+    async with async_session_maker() as session:
+        note = await progress_service.add_progress_note(
+            session,
+            user_id=user_id,
+            title=title,
+            before_text=body.get("before_text"),
+            after_text=body.get("after_text"),
+            note=body.get("note"),
+        )
+        target_user = await session.get(User, user_id)
+
+    bot = request.app["bot"]
+    if target_user:
+        await notify_progress_added(bot, target_user, title)
+
+    return web.json_response({"ok": True, "note": _serialize_progress(note)})
+
+
+@routes.post("/api/miniapp/admin/progress/delete")
+async def api_admin_progress_delete(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    async with async_session_maker() as session:
+        ok = await progress_service.delete_progress_note(session, body.get("id"))
+    return web.json_response({"ok": ok})
+
+
+@routes.post("/api/miniapp/admin/homework/add")
+async def api_admin_homework_add(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    user_id = body.get("user_id")
+    text = (body.get("text") or "").strip()
+    if not user_id or not text:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "user_id_and_text_required"}))
+
+    async with async_session_maker() as session:
+        hw = await progress_service.add_homework(session, user_id=user_id, text=text)
+        target_user = await session.get(User, user_id)
+
+    bot = request.app["bot"]
+    if target_user:
+        await notify_homework_added(bot, target_user, text)
+
+    return web.json_response({"ok": True, "homework": _serialize_homework(hw)})
+
+
+@routes.post("/api/miniapp/admin/homework/delete")
+async def api_admin_homework_delete(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    async with async_session_maker() as session:
+        ok = await progress_service.delete_homework(session, body.get("id"))
+    return web.json_response({"ok": ok})

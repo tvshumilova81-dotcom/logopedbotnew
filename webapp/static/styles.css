@@ -105,19 +105,17 @@ button {
 
 /* ===== Карточка "Здравствуйте" с фото ===== */
 .hero-card {
+  position: relative;
+  overflow: visible;
   background: linear-gradient(160deg, var(--primary-light) 0%, #fff 65%);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px 16px;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  padding: 18px 118px 18px 16px;
+  margin-bottom: 18px;
   box-shadow: var(--shadow);
 }
 
 .hero-text {
-  flex: 1;
   min-width: 0;
 }
 
@@ -129,15 +127,29 @@ button {
 }
 
 .hero-text h1 {
-  font-size: 18px;
+  font-size: 19px;
   margin: 0 0 2px;
   line-height: 1.25;
 }
 
 .hero-subtitle {
-  font-size: 12.5px;
+  font-size: 13px;
+  color: var(--primary-dark);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.hero-role {
+  font-size: 11.5px;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.hero-bio {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0 0 10px;
 }
 
 .hero-checks {
@@ -152,19 +164,17 @@ button {
 }
 
 .hero-photo {
-  width: 96px;
-  height: 128px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(226, 90, 130, 0.25);
+  position: absolute;
+  right: 2px;
+  bottom: -18px;
+  width: 128px;
+  z-index: 2;
+  filter: drop-shadow(0 10px 14px rgba(150, 60, 90, 0.28));
 }
 
 .hero-photo img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  height: auto;
   display: block;
 }
 
@@ -211,7 +221,129 @@ button {
 }
 
 .how-item .ic {
-  font-size: 20px;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.btn-ic {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: -4px;
+  margin-right: 4px;
+}
+
+.icon-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.nav-ic {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 2px;
+}
+
+/* ===== Прогресс: динамика / домашние задания ===== */
+.progress-card {
+  padding-bottom: 14px;
+}
+
+.progress-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.before-after {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ba-col {
+  flex: 1;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.ba-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.ba-val {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ba-val.good {
+  color: #3e8f66;
+}
+
+.ba-arrow {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.progress-note {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.progress-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.homework-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.homework-row .hw-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  margin-top: 1px;
+}
+
+.homework-row .hw-text {
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.homework-row.done .hw-check {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.homework-row.done .hw-text {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 /* ===== Кнопки ===== */
@@ -790,6 +922,26 @@ button {
 .slot-admin-row.free { }
 .slot-admin-row.booked { background: var(--primary-light); border-color: var(--primary-light); }
 .slot-admin-row.blocked { background: #ece7ea; border-color: #ece7ea; }
+
+.add-slot-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.add-slot-row input[type="time"] {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  font-size: 13.5px;
+  background: var(--card);
+}
+
+.add-slot-row .btn {
+  width: auto;
+  white-space: nowrap;
+}
 
 .access-denied {
   text-align: center;

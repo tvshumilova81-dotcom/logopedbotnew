@@ -39,8 +39,14 @@ const AdminNav = {
     document.querySelectorAll("#admin-content .screen").forEach((s) => s.classList.remove("active"));
     document.getElementById("screen-" + screen).classList.add("active");
     document.querySelectorAll("#admin-nav .nav-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelector('#admin-nav .nav-btn[data-tab="' + screen + '"]').classList.add("active");
+    const navBtn = document.querySelector('#admin-nav .nav-btn[data-tab="' + screen + '"]');
+    if (navBtn) navBtn.classList.add("active");
+    else {
+      const fallback = document.querySelector('#admin-nav .nav-btn[data-tab="clients"]');
+      if (fallback) fallback.classList.add("active");
+    }
     if (screen === "income") Income.load();
+    if (screen === "clients") Clients.load();
   },
 };
 
@@ -146,6 +152,13 @@ const AdminCal = {
       } else {
         row.style.cursor = "pointer";
         row.onclick = () => AdminCal.toggle(dateStr, s.time);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn btn-ghost btn-sm";
+        delBtn.textContent = "✕";
+        delBtn.title = "Удалить это время из расписания";
+        delBtn.onclick = (ev) => { ev.stopPropagation(); AdminCal.deleteSlot(dateStr, s.time); };
+        row.appendChild(delBtn);
       }
       wrap.appendChild(row);
     });
@@ -157,6 +170,30 @@ const AdminCal = {
       AdminCal.render();
     } catch (e) {
       alert("Не удалось изменить слот");
+    }
+  },
+  async addSlot() {
+    if (!State.selectedDate) return;
+    const input = document.getElementById("a-new-time");
+    const timeStr = input.value;
+    if (!timeStr) { alert("Укажите время"); return; }
+    try {
+      await api("/admin/slots/add", { method: "POST", body: JSON.stringify({ date: State.selectedDate, time: timeStr }) });
+      input.value = "";
+      AdminCal.selectDay(State.selectedDate);
+      AdminCal.render();
+    } catch (e) {
+      alert(e.status === 409 ? "Такое время уже есть в расписании" : "Не удалось добавить время");
+    }
+  },
+  async deleteSlot(dateStr, timeStr) {
+    if (!confirm("Удалить это время из расписания совсем?")) return;
+    try {
+      await api("/admin/slots/delete", { method: "POST", body: JSON.stringify({ date: dateStr, time: timeStr }) });
+      AdminCal.selectDay(dateStr);
+      AdminCal.render();
+    } catch (e) {
+      alert("Не удалось удалить (возможно, время уже занято клиентом)");
     }
   },
   async cancelBooking(bookingId, dateStr) {
@@ -212,6 +249,132 @@ const Income = {
       Income.load();
     } catch (e) {
       alert("Не удалось добавить корректировку");
+    }
+  },
+};
+
+const Clients = {
+  list: [],
+  current: null,
+  async load() {
+    const list = document.getElementById("clients-list");
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+    try {
+      Clients.list = await api("/admin/clients");
+    } catch (e) {
+      list.innerHTML = '<div class="empty-state">Не удалось загрузить клиентов</div>';
+      return;
+    }
+    Clients.render(Clients.list);
+  },
+  render(items) {
+    const list = document.getElementById("clients-list");
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-state">Клиентов пока нет</div>';
+      return;
+    }
+    list.innerHTML = "";
+    items.forEach((c) => {
+      const row = document.createElement("div");
+      row.className = "action-item";
+      row.innerHTML =
+        '<div class="icon pink"><img class="icon-img" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" /></div>' +
+        '<div class="body"><strong>' + (c.parent_name || c.display_name) + '</strong><span>' + (c.child_name ? "Ребёнок: " + c.child_name + (c.child_age ? ", " + c.child_age : "") : "Профиль не заполнен") + "</span></div>" +
+        '<div class="arrow">›</div>';
+      row.onclick = () => Clients.openClient(c);
+      list.appendChild(row);
+    });
+  },
+  search() {
+    const q = document.getElementById("client-search").value.toLowerCase();
+    Clients.render(
+      Clients.list.filter((c) =>
+        ((c.parent_name || "") + (c.child_name || "") + (c.username || "")).toLowerCase().includes(q)
+      )
+    );
+  },
+  openClient(client) {
+    Clients.current = client;
+    document.getElementById("client-detail-title").textContent = client.parent_name || client.display_name;
+    document.getElementById("pn-title").value = "";
+    document.getElementById("pn-before").value = "";
+    document.getElementById("pn-after").value = "";
+    document.getElementById("pn-note").value = "";
+    document.getElementById("hw-text").value = "";
+    AdminNav.go("client-detail");
+    Clients.loadDetail();
+  },
+  async loadDetail() {
+    const list = document.getElementById("client-detail-list");
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+    let data;
+    try {
+      data = await api("/admin/clients/" + Clients.current.id + "/progress");
+    } catch (e) {
+      list.innerHTML = '<div class="empty-state">Не удалось загрузить</div>';
+      return;
+    }
+    list.innerHTML = "";
+    if (!data.notes.length && !data.homework.length) {
+      list.innerHTML = '<div class="empty-state">Пока нет записей о прогрессе и заданий</div>';
+      return;
+    }
+    data.notes.forEach((n) => {
+      const card = document.createElement("div");
+      card.className = "card progress-card";
+      card.innerHTML =
+        '<div class="progress-title">📈 ' + n.title + "</div>" +
+        (n.before_text || n.after_text
+          ? '<div class="before-after"><div class="ba-col"><div class="ba-lbl">Было</div><div class="ba-val">' + (n.before_text || "—") + '</div></div><div class="ba-arrow">→</div><div class="ba-col"><div class="ba-lbl">Стало</div><div class="ba-val good">' + (n.after_text || "—") + "</div></div></div>"
+          : "") +
+        (n.note ? '<div class="progress-note">' + n.note + "</div>" : "");
+      list.appendChild(card);
+    });
+    data.homework.forEach((h) => {
+      const row = document.createElement("div");
+      row.className = "homework-row" + (h.is_done ? " done" : "");
+      row.style.cursor = "default";
+      row.innerHTML = '<div class="hw-check">' + (h.is_done ? "✓" : "") + '</div><div class="hw-text">📝 ' + h.text + "</div>";
+      list.appendChild(row);
+    });
+  },
+  async addProgress() {
+    if (!Clients.current) return;
+    const title = document.getElementById("pn-title").value.trim();
+    if (!title) { alert("Укажите название"); return; }
+    try {
+      await api("/admin/progress/add", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: Clients.current.id,
+          title,
+          before_text: document.getElementById("pn-before").value || null,
+          after_text: document.getElementById("pn-after").value || null,
+          note: document.getElementById("pn-note").value || null,
+        }),
+      });
+      document.getElementById("pn-title").value = "";
+      document.getElementById("pn-before").value = "";
+      document.getElementById("pn-after").value = "";
+      document.getElementById("pn-note").value = "";
+      Clients.loadDetail();
+    } catch (e) {
+      alert("Не удалось добавить запись");
+    }
+  },
+  async addHomework() {
+    if (!Clients.current) return;
+    const text = document.getElementById("hw-text").value.trim();
+    if (!text) { alert("Введите текст задания"); return; }
+    try {
+      await api("/admin/homework/add", {
+        method: "POST",
+        body: JSON.stringify({ user_id: Clients.current.id, text }),
+      });
+      document.getElementById("hw-text").value = "";
+      Clients.loadDetail();
+    } catch (e) {
+      alert("Не удалось отправить задание");
     }
   },
 };

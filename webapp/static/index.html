@@ -17,27 +17,33 @@
     <div class="hero-card">
       <div class="hero-text">
         <div class="hero-greeting">Здравствуйте! 👋</div>
-        <h1>Я — Татьяна Шумилова</h1>
-        <div class="hero-subtitle">Логопед-нейрокоррекция</div>
+        <h1>Шумилова Татьяна</h1>
+        <div class="hero-subtitle">Онлайн-логопед</div>
+        <div class="hero-role">Логопед · Педагог</div>
+        <p class="hero-bio">Помогаю детям говорить красиво, уверенно и с удовольствием.</p>
         <ul class="hero-checks">
-          <li>✅ Опыт более 10 лет</li>
-          <li>✅ Более 500 успешных кейсов</li>
-          <li>✅ Онлайн-занятия для детей и взрослых</li>
+          <li>✅ Более 16 лет педагогического опыта</li>
+          <li>✅ Свыше 3 лет логопедической практики</li>
+          <li>✅ 60+ детей подготовлено к школе</li>
         </ul>
       </div>
-      <div class="hero-photo"><img src="/webapp/static/images/tatiana.jpg" alt="Татьяна Шумилова" /></div>
+      <div class="hero-photo"><img src="/webapp/static/images/tatiana_cutout.png" alt="Татьяна Шумилова" /></div>
     </div>
 
     <div id="home-next-lesson" class="pill-lesson" style="display:none"></div>
 
-    <button class="btn btn-primary" onclick="Nav.go('book-calendar')" style="margin-bottom:10px">🗓 Записаться на занятие</button>
-    <button class="btn btn-secondary" onclick="Nav.go('consultation')" style="margin-bottom:16px">💬 Получить консультацию</button>
+    <button class="btn btn-primary" onclick="Nav.go('book-calendar')" style="margin-bottom:10px">
+      <img class="btn-ic" src="/webapp/static/images/icons/icon-calendar.png" alt="" /> Записаться на занятие
+    </button>
+    <button class="btn btn-secondary" onclick="Nav.go('consultation')" style="margin-bottom:16px">
+      <img class="btn-ic" src="/webapp/static/images/icons/icon-chat.png" alt="" /> Получить консультацию
+    </button>
 
     <div class="section-label">Как я работаю</div>
     <div class="how-grid">
-      <div class="how-item"><span class="ic">🎯</span>Индивидуальный подход</div>
-      <div class="how-item"><span class="ic">🧠</span>Нейрокоррекция</div>
-      <div class="how-item"><span class="ic">📈</span>Реальный результат</div>
+      <div class="how-item"><img class="ic" src="/webapp/static/images/icons/icon-target-heart.png" alt="" />Индивидуальный подход</div>
+      <div class="how-item"><img class="ic" src="/webapp/static/images/icons/icon-brain.png" alt="" />Современные методики</div>
+      <div class="how-item"><img class="ic" src="/webapp/static/images/icons/icon-chart-check.png" alt="" />Реальный результат</div>
     </div>
 
     <div class="stats-grid">
@@ -46,16 +52,31 @@
       <div class="stat-box"><div class="num">💬</div><div class="lbl">Онлайн</div></div>
     </div>
 
+    <div class="action-item" onclick="Nav.go('progress')">
+      <div class="icon pink"><img class="icon-img" src="/webapp/static/images/icons/icon-chart-check.png" alt="" /></div>
+      <div class="body"><strong>Прогресс и задания</strong><span>Динамика занятий и домашние задания</span></div>
+      <div class="arrow">›</div>
+    </div>
     <div class="action-item" onclick="Nav.go('history')">
-      <div class="icon green">📖</div>
+      <div class="icon green"><img class="icon-img" src="/webapp/static/images/icons/icon-book-open.png" alt="" /></div>
       <div class="body"><strong>История занятий</strong><span>Все ваши записи</span></div>
       <div class="arrow">›</div>
     </div>
     <div class="action-item" onclick="Nav.go('materials')">
-      <div class="icon orange">📚</div>
+      <div class="icon orange"><img class="icon-img" src="/webapp/static/images/icons/icon-books-stack.png" alt="" /></div>
       <div class="body"><strong>Материалы</strong><span>Купленные и бесплатные</span></div>
       <div class="arrow">›</div>
     </div>
+  </section>
+
+  <!-- ==================== ПРОГРЕСС И ДОМАШНИЕ ЗАДАНИЯ ==================== -->
+  <section class="screen" id="screen-progress">
+    <div class="topbar"><button class="back" onclick="Nav.go('home')">←</button><div class="title">Прогресс и задания</div><div style="width:34px"></div></div>
+    <div class="tabs">
+      <button class="active" id="tab-progress-notes" onclick="Progress.switchTab('notes')">Динамика</button>
+      <button id="tab-progress-homework" onclick="Progress.switchTab('homework')">Домашние задания</button>
+    </div>
+    <div id="progress-list"><div class="loader">Загрузка…</div></div>
   </section>
 
   <!-- ==================== КОНСУЛЬТАЦИЯ ==================== -->
@@ -142,7 +163,7 @@
   <!-- ==================== ПРОФИЛЬ ==================== -->
   <section class="screen" id="screen-profile">
     <div class="topbar"><div class="title">Профиль и настройки</div><div></div></div>
-    <div class="avatar-lg">🙂</div>
+    <div class="avatar-lg"><img class="icon-img" style="width:44px;height:44px" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" /></div>
     <div class="field"><label>Имя родителя</label><input id="p-parent-name" placeholder="Как вас зовут" /></div>
     <div class="field"><label>Имя ребёнка</label><input id="p-child-name" placeholder="Имя ребёнка" /></div>
     <div class="field"><label>Возраст ребёнка</label><input id="p-child-age" placeholder="Например, 5 лет" /></div>
@@ -174,7 +195,7 @@
     <div class="card">
       <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Стоимость и способ оплаты занятия согласовываются индивидуально после записи.</div>
       <div class="action-item" style="cursor:default">
-        <div class="icon pink">💬</div>
+        <div class="icon pink"><img class="icon-img" src="/webapp/static/images/icons/icon-chat.png" alt="" /></div>
         <div class="body"><strong>Написать логопеду</strong><span>Обсудить оплату в Telegram</span></div>
       </div>
     </div>
@@ -182,10 +203,10 @@
 
   <!-- Нижняя навигация -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-tab="home" onclick="Nav.go('home')"><span class="ic">🏠</span>Главная</button>
-    <button class="nav-btn" data-tab="book-calendar" onclick="Nav.go('book-calendar')"><span class="ic">🗓</span>Запись</button>
-    <button class="nav-btn" data-tab="materials" onclick="Nav.go('materials')"><span class="ic">📚</span>Материалы</button>
-    <button class="nav-btn" data-tab="profile" onclick="Nav.go('profile')"><span class="ic">👤</span>Профиль</button>
+    <button class="nav-btn active" data-tab="home" onclick="Nav.go('home')"><img class="nav-ic" src="/webapp/static/images/icons/icon-house.png" alt="" />Главная</button>
+    <button class="nav-btn" data-tab="book-calendar" onclick="Nav.go('book-calendar')"><img class="nav-ic" src="/webapp/static/images/icons/icon-calendar.png" alt="" />Запись</button>
+    <button class="nav-btn" data-tab="materials" onclick="Nav.go('materials')"><img class="nav-ic" src="/webapp/static/images/icons/icon-books-stack.png" alt="" />Материалы</button>
+    <button class="nav-btn" data-tab="profile" onclick="Nav.go('profile')"><img class="nav-ic" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" />Профиль</button>
   </nav>
 
   <div class="modal-overlay" id="article-modal" onclick="if(event.target===this) UI.closeModal()">

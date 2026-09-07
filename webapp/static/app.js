@@ -63,7 +63,7 @@ const Nav = {
     if (target) target.classList.add("active");
 
     document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-    const navMap = { "home": "home", "book-calendar": "book-calendar", "book-success": "book-calendar", "materials": "materials", "profile": "profile", "payment": "profile", "history": "home", "consultation": "home" };
+    const navMap = { "home": "home", "book-calendar": "book-calendar", "book-success": "book-calendar", "materials": "materials", "profile": "profile", "payment": "profile", "history": "home", "consultation": "home", "progress": "home" };
     const navKey = screen === "book-country" ? (State.countryReturnScreen === "profile" ? "profile" : "book-calendar") : navMap[screen];
     if (navKey) {
       const btn = document.querySelector('.nav-btn[data-tab="' + navKey + '"]');
@@ -74,6 +74,7 @@ const Nav = {
     if (screen === "book-calendar") Calendar.render();
     if (screen === "history") History.load();
     if (screen === "materials") Materials.load();
+    if (screen === "progress") Progress.load();
     if (screen === "profile") {
       if (State.skipProfileFill) {
         State.skipProfileFill = false;
@@ -493,6 +494,82 @@ const Profile = {
       loadMe();
     } catch (e) {
       UI.toast("Не удалось сохранить");
+    }
+  },
+};
+
+/* ==================== ПРОГРЕСС И ДОМАШНИЕ ЗАДАНИЯ ==================== */
+
+const Progress = {
+  data: null,
+  tab: "notes",
+  async load() {
+    const list = document.getElementById("progress-list");
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+    try {
+      Progress.data = await api("/progress");
+    } catch (e) {
+      list.innerHTML = '<div class="empty-state">Не удалось загрузить</div>';
+      return;
+    }
+    Progress.render();
+  },
+  switchTab(tab) {
+    Progress.tab = tab;
+    document.getElementById("tab-progress-notes").classList.toggle("active", tab === "notes");
+    document.getElementById("tab-progress-homework").classList.toggle("active", tab === "homework");
+    Progress.render();
+  },
+  render() {
+    const list = document.getElementById("progress-list");
+    if (!Progress.data) return;
+    list.innerHTML = "";
+
+    if (Progress.tab === "notes") {
+      const notes = Progress.data.notes;
+      if (!notes.length) {
+        list.innerHTML = '<div class="empty-state">Пока нет записей о динамике занятий — они появятся здесь после того, как логопед их добавит</div>';
+        return;
+      }
+      notes.forEach((n) => {
+        const card = document.createElement("div");
+        card.className = "card progress-card";
+        card.innerHTML =
+          '<div class="progress-title">' + n.title + "</div>" +
+          (n.before_text || n.after_text
+            ? '<div class="before-after">' +
+              '<div class="ba-col"><div class="ba-lbl">Было</div><div class="ba-val">' + (n.before_text || "—") + "</div></div>" +
+              '<div class="ba-arrow">→</div>' +
+              '<div class="ba-col"><div class="ba-lbl">Стало</div><div class="ba-val good">' + (n.after_text || "—") + "</div></div>" +
+              "</div>"
+            : "") +
+          (n.note ? '<div class="progress-note">' + n.note + "</div>" : "") +
+          '<div class="progress-date">' + formatDateHuman(n.created_at.slice(0, 10)) + "</div>";
+        list.appendChild(card);
+      });
+    } else {
+      const items = Progress.data.homework;
+      if (!items.length) {
+        list.innerHTML = '<div class="empty-state">Пока нет домашних заданий</div>';
+        return;
+      }
+      items.forEach((h) => {
+        const row = document.createElement("div");
+        row.className = "homework-row" + (h.is_done ? " done" : "");
+        row.innerHTML =
+          '<div class="hw-check">' + (h.is_done ? "✓" : "") + "</div>" +
+          '<div class="hw-text">' + h.text + "</div>";
+        row.onclick = () => Progress.toggleHomework(h.id);
+        list.appendChild(row);
+      });
+    }
+  },
+  async toggleHomework(id) {
+    try {
+      await api("/homework/toggle", { method: "POST", body: JSON.stringify({ id }) });
+      Progress.load();
+    } catch (e) {
+      UI.toast("Не удалось обновить задание");
     }
   },
 };
