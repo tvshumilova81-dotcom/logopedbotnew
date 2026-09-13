@@ -18,6 +18,9 @@ async def list_users(session: AsyncSession, search: str | None = None, limit: in
         ).order_by(User.created_at.desc()).limit(limit)
     result = await session.execute(query)
     return list(result.scalars().all())
+
+
+async def get_or_create_user(session: AsyncSession, tg_user: TgUser) -> User:
     return await get_or_create_user_by_id(session, tg_user.id, tg_user.username)
 
 
