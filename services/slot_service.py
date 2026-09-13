@@ -6,24 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.slot import BookingStatus, MiniAppBooking, SlotStatus, TimeSlot
-
-# Шаблон рабочей недели: понедельник(0) ... воскресенье(6).
-# По умолчанию — Пн-Сб с перерывом на обед в 13:00, воскресенье выходной.
-WEEKLY_TEMPLATE: dict[int, list[str]] = {
-    0: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    1: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    2: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    3: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    4: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    5: ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"],
-    6: [],
-}
+from services import schedule_template_service
 
 GENERATE_DAYS_AHEAD = 60
 
 
 async def ensure_slots_generated(session: AsyncSession, days_ahead: int = GENERATE_DAYS_AHEAD) -> None:
-    """Создаёт недостающие тайм-слоты на ближайшие days_ahead дней по шаблону недели."""
+    """Создаёт недостающие тайм-слоты на ближайшие days_ahead дней по шаблону недели (из БД)."""
+    template = await schedule_template_service.get_template(session)
+
     today = date.today()
     existing = await session.execute(
         select(TimeSlot.date, TimeSlot.time).where(
@@ -36,7 +27,7 @@ async def ensure_slots_generated(session: AsyncSession, days_ahead: int = GENERA
     to_create: list[TimeSlot] = []
     for offset in range(days_ahead + 1):
         d = today + timedelta(days=offset)
-        times = WEEKLY_TEMPLATE.get(d.weekday(), [])
+        times = template.get(d.weekday(), [])
         for t in times:
             if (d.isoformat(), t) not in existing_pairs:
                 to_create.append(TimeSlot(date=d.isoformat(), time=t, status=SlotStatus.FREE))

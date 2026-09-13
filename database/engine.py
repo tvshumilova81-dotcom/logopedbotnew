@@ -21,10 +21,13 @@ async def init_db() -> None:
         # Импортируем модели, чтобы они были зарегистрированы в metadata
         from database.models import (  # noqa: F401
             booking,
+            income,
             material,
+            progress,
             purchase,
             questionnaire,
-            schedule,
+            schedule_template,
+            slot,
             user,
         )
 
