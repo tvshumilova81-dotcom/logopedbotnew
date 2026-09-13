@@ -1,9 +1,6 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
-
-from config.settings import settings
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 MENU_BOOKING = "📝 Записаться на занятие"
-MENU_MINIAPP = "🗓 Мини-приложение (запись)"
 MENU_QUESTIONNAIRE = "📋 Анкета ребёнка"
 MENU_ABOUT = "👩‍🏫 Обо мне"
 MENU_MATERIALS = "📚 Полезные материалы"
@@ -14,14 +11,7 @@ MENU_CONTACTS = "📩 Контакты"
 
 
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
-    keyboard = []
-
-    if settings.WEBAPP_URL:
-        keyboard.append(
-            [KeyboardButton(text=MENU_MINIAPP, web_app=WebAppInfo(url=settings.WEBAPP_URL))]
-        )
-
-    keyboard += [
+    keyboard = [
         [KeyboardButton(text=MENU_BOOKING)],
         [KeyboardButton(text=MENU_QUESTIONNAIRE)],
         [KeyboardButton(text=MENU_ABOUT), KeyboardButton(text=MENU_MATERIALS)],
