@@ -39,14 +39,17 @@ const AdminNav = {
     document.querySelectorAll("#admin-content .screen").forEach((s) => s.classList.remove("active"));
     document.getElementById("screen-" + screen).classList.add("active");
     document.querySelectorAll("#admin-nav .nav-btn").forEach((b) => b.classList.remove("active"));
+    const navFallback = { "client-detail": "clients", "template": "schedule" };
     const navBtn = document.querySelector('#admin-nav .nav-btn[data-tab="' + screen + '"]');
-    if (navBtn) navBtn.classList.add("active");
-    else {
-      const fallback = document.querySelector('#admin-nav .nav-btn[data-tab="clients"]');
+    if (navBtn) {
+      navBtn.classList.add("active");
+    } else {
+      const fallback = document.querySelector('#admin-nav .nav-btn[data-tab="' + (navFallback[screen] || "schedule") + '"]');
       if (fallback) fallback.classList.add("active");
     }
     if (screen === "income") Income.load();
     if (screen === "clients") Clients.load();
+    if (screen === "template") Template.load();
   },
 };
 
@@ -253,6 +256,82 @@ const Income = {
   },
 };
 
+const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+const Template = {
+  data: null,
+  selectedDay: new Date().getDay() === 0 ? 6 : new Date().getDay() - 1,
+  async load() {
+    Template.renderWeekdayTabs();
+    const list = document.getElementById("tpl-times-list");
+    list.innerHTML = '<div class="loader">Загрузка…</div>';
+    try {
+      Template.data = await api("/admin/template");
+    } catch (e) {
+      list.innerHTML = '<div class="empty-state">Не удалось загрузить</div>';
+      return;
+    }
+    Template.renderDay();
+  },
+  renderWeekdayTabs() {
+    const wrap = document.getElementById("tpl-weekday-tabs");
+    wrap.innerHTML = "";
+    WEEKDAY_LABELS.forEach((label, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "weekday-chip" + (idx === Template.selectedDay ? " active" : "");
+      btn.textContent = label;
+      btn.onclick = () => {
+        Template.selectedDay = idx;
+        Template.renderWeekdayTabs();
+        Template.renderDay();
+      };
+      wrap.appendChild(btn);
+    });
+  },
+  renderDay() {
+    if (!Template.data) return;
+    document.getElementById("tpl-day-title").textContent = "Время по умолчанию: " + WEEKDAY_LABELS[Template.selectedDay];
+    const times = Template.data[String(Template.selectedDay)] || [];
+    const list = document.getElementById("tpl-times-list");
+    list.innerHTML = "";
+    if (!times.length) {
+      list.innerHTML = '<div class="empty-state">На этот день нет времени по умолчанию</div>';
+      return;
+    }
+    times.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = "slot-admin-row free";
+      row.innerHTML = '<div class="time">' + t + '</div><div class="info">Каждую неделю</div>';
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn btn-ghost btn-sm";
+      delBtn.textContent = "✕";
+      delBtn.onclick = () => Template.remove(t);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  },
+  async add() {
+    const input = document.getElementById("tpl-new-time");
+    const timeStr = input.value;
+    if (!timeStr) { alert("Укажите время"); return; }
+    try {
+      await api("/admin/template/add", { method: "POST", body: JSON.stringify({ weekday: Template.selectedDay, time: timeStr }) });
+      input.value = "";
+      Template.load();
+    } catch (e) {
+      alert(e.status === 409 ? "Такое время уже есть в этот день" : "Не удалось добавить");
+    }
+  },
+  async remove(timeStr) {
+    try {
+      await api("/admin/template/delete", { method: "POST", body: JSON.stringify({ weekday: Template.selectedDay, time: timeStr }) });
+      Template.load();
+    } catch (e) {
+      alert("Не удалось удалить");
+    }
+  },
+};
+
 const Clients = {
   list: [],
   current: null,
@@ -279,7 +358,7 @@ const Clients = {
       row.className = "action-item";
       row.innerHTML =
         '<div class="icon pink"><img class="icon-img" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" /></div>' +
-        '<div class="body"><strong>' + (c.parent_name || c.display_name) + '</strong><span>' + (c.child_name ? "Ребёнок: " + c.child_name + (c.child_age ? ", " + c.child_age : "") : "Профиль не заполнен") + "</span></div>" +
+        '<div class="body"><strong>' + (c.parent_name || c.display_name) + (c.username ? ' <span class="username-tag">@' + c.username + '</span>' : "") + '</strong><span>' + (c.child_name ? "Ребёнок: " + c.child_name + (c.child_age ? ", " + c.child_age : "") : "Профиль не заполнен") + "</span></div>" +
         '<div class="arrow">›</div>';
       row.onclick = () => Clients.openClient(c);
       list.appendChild(row);
@@ -295,7 +374,8 @@ const Clients = {
   },
   openClient(client) {
     Clients.current = client;
-    document.getElementById("client-detail-title").textContent = client.parent_name || client.display_name;
+    document.getElementById("client-detail-title").textContent =
+      (client.parent_name || client.display_name) + (client.username ? " (@" + client.username + ")" : "");
     document.getElementById("pn-title").value = "";
     document.getElementById("pn-before").value = "";
     document.getElementById("pn-after").value = "";

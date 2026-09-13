@@ -10,7 +10,7 @@ from aiohttp import web
 from config.settings import settings
 from database.engine import async_session_maker
 from database.models.user import User
-from services import income_service, progress_service, slot_service
+from services import income_service, progress_service, schedule_template_service, slot_service
 from services.article_service import get_article, list_articles
 from services.material_service import list_active_materials, user_purchases
 from services.geo_data import COUNTRIES
@@ -527,6 +527,54 @@ async def api_admin_slots_delete(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest(text=json.dumps({"error": "cannot_delete"}))
 
     return web.json_response({"ok": True})
+
+
+# ==================== Админ: стандартное расписание (шаблон по дням недели) ====================
+
+@routes.get("/api/miniapp/admin/template")
+async def api_admin_template_get(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+
+    async with async_session_maker() as session:
+        template = await schedule_template_service.get_template(session)
+
+    return web.json_response({str(k): v for k, v in template.items()})
+
+
+@routes.post("/api/miniapp/admin/template/add")
+async def api_admin_template_add(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    weekday, time_str = body.get("weekday"), body.get("time")
+    if weekday is None or not time_str:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "weekday_and_time_required"}))
+
+    async with async_session_maker() as session:
+        ok = await schedule_template_service.add_template_slot(session, int(weekday), time_str)
+        if ok:
+            await slot_service.ensure_slots_generated(session)
+
+    if not ok:
+        raise web.HTTPConflict(text=json.dumps({"error": "already_exists"}))
+
+    return web.json_response({"ok": True})
+
+
+@routes.post("/api/miniapp/admin/template/delete")
+async def api_admin_template_delete(request: web.Request) -> web.Response:
+    _user, tg_data = await _authenticate(request)
+    _require_admin(tg_data)
+    body = await request.json()
+    weekday, time_str = body.get("weekday"), body.get("time")
+    if weekday is None or not time_str:
+        raise web.HTTPBadRequest(text=json.dumps({"error": "weekday_and_time_required"}))
+
+    async with async_session_maker() as session:
+        ok = await schedule_template_service.delete_template_slot(session, int(weekday), time_str)
+
+    return web.json_response({"ok": ok})
 
 
 # ==================== Админ: клиенты, прогресс, домашние задания ====================

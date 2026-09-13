@@ -943,6 +943,37 @@ button {
   white-space: nowrap;
 }
 
+.weekday-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+
+.weekday-chip {
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.weekday-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.username-tag {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .access-denied {
   text-align: center;
   padding: 60px 20px;
