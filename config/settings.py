@@ -36,19 +36,14 @@ class Settings(BaseSettings):
     WEBHOOK_SECRET: str = ""  # произвольная строка для проверки запросов от Telegram
     PORT: int = 8000  # Render сам подставит свой PORT через переменную окружения
 
+    # === Мини-приложение (Telegram Mini App) ===
+    # Публичный адрес мини-аппа, например: https://logoped-bot.onrender.com/webapp/
+    # Если не задан — кнопка мини-приложения не показывается.
+    WEBAPP_URL: str = ""
+
     @property
     def use_webhook(self) -> bool:
         return bool(self.WEBHOOK_URL)
-
-    @property
-    def webapp_client_url(self) -> str:
-        """Публичный URL клиентского мини-приложения (открывается кнопкой в боте)."""
-        return self.WEBHOOK_URL.rstrip("/") + "/webapp"
-
-    @property
-    def webapp_admin_url(self) -> str:
-        """Публичный URL админ-панели мини-приложения (доступен только вам)."""
-        return self.WEBHOOK_URL.rstrip("/") + "/webapp/admin"
 
     @property
     def admin_ids(self) -> list[int]:
