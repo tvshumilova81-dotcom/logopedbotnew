@@ -41,6 +41,16 @@ class Settings(BaseSettings):
         return bool(self.WEBHOOK_URL)
 
     @property
+    def webapp_client_url(self) -> str:
+        """Публичный URL клиентского мини-приложения (открывается кнопкой в боте)."""
+        return self.WEBHOOK_URL.rstrip("/") + "/webapp"
+
+    @property
+    def webapp_admin_url(self) -> str:
+        """Публичный URL админ-панели мини-приложения (доступен только вам)."""
+        return self.WEBHOOK_URL.rstrip("/") + "/webapp/admin"
+
+    @property
     def admin_ids(self) -> list[int]:
         result: list[int] = []
         for chunk in self.ADMIN_IDS.split(","):

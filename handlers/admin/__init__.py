@@ -1,7 +1,7 @@
 from aiogram import Router
 
 from filters.admin import IsAdmin
-from handlers.admin import broadcast, export, materials_admin, notifications, stats, users
+from handlers.admin import broadcast, export, materials_admin, notifications, stats, users, webapp
 
 admin_router = Router(name="admin_root")
 admin_router.message.filter(IsAdmin())
@@ -12,3 +12,4 @@ admin_router.include_router(stats.router)
 admin_router.include_router(users.router)
 admin_router.include_router(export.router)
 admin_router.include_router(materials_admin.router)
+admin_router.include_router(webapp.router)

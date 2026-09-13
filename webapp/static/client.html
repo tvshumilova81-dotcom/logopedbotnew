@@ -671,8 +671,12 @@ async function renderHistory(){
 
 async function renderMaterials(){
   scroll.innerHTML = `<div class="px"><p style="text-align:center;color:var(--muted);margin-top:60px;">Загрузка...</p></div>`;
-  let materials = [];
-  try { materials = await api('/api/materials'); } catch(e){}
+  let materials = []; let loadError = false;
+  try { materials = await api('/api/materials'); } catch(e){ loadError = true; }
+  if(loadError){
+    scroll.innerHTML = `<div class="px"><p style="text-align:center;color:var(--muted);margin-top:60px;">Не удалось загрузить материалы. Откройте мини-приложение через кнопку в боте.</p></div>`;
+    return;
+  }
   const list = materials.filter(m=> materialsSub==='purchased' ? m.purchased : !m.purchased);
   scroll.innerHTML = `
     <div class="px">
