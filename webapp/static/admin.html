@@ -1,102 +1,589 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Админ-панель · Татьяна Шумилова</title>
-<link rel="stylesheet" href="/webapp/static/styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ-панель — Татьяна Шумилова</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFFAF7;
+    --blush-050:#FDF3F0;
+    --blush-100:#FBEAE5;
+    --blush-200:#F4D6CD;
+    --rose-400:#D8998F;
+    --rose-500:#C67F73;
+    --rose-600:#B06559;
+    --ink:#3B2A26;
+    --ink-soft:#6E5952;
+    --muted:#9C8983;
+    --line:#EFDDD6;
+    --gold:#C7A369;
+    --green:#7C9B72;
+    --white:#FFFFFF;
+    --shadow: 0 12px 32px -12px rgba(94,54,44,0.22);
+    --radius-lg: 26px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Manrope',sans-serif;
+    background:#EDE0DA;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:18px 10px 40px;
+  }
+  h1,h2,h3,.serif{ font-family:'Fraunces', serif; }
+
+  /* ---------- MODE SWITCH (prototype-only control) ---------- */
+  #devSwitch{
+    position:fixed; top:12px; right:12px; z-index:999;
+    display:flex; background:rgba(59,42,38,0.85); border-radius:999px; padding:3px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    font-size:11.5px; font-weight:700;
+  }
+  #devSwitch button{
+    border:none; background:transparent; color:#EAD9D2; padding:7px 12px; border-radius:999px;
+    cursor:pointer; font-family:'Manrope',sans-serif; font-weight:700; font-size:11.5px; letter-spacing:.2px;
+  }
+  #devSwitch button.active{ background:var(--rose-500); color:#fff; }
+
+  /* ================= CLIENT PHONE FRAME ================= */
+  #clientFrame{
+    width:400px; max-width:100%;
+    background:var(--cream);
+    border-radius:38px;
+    box-shadow: var(--shadow), 0 0 0 8px #201512;
+    overflow:hidden;
+    position:relative;
+    min-height:812px;
+    display:flex;
+    flex-direction:column;
+  }
+  #clientNotch{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:150px; height:24px; background:#201512; border-radius:0 0 16px 16px; z-index:50;
+  }
+  #clientScroll{
+    flex:1; overflow-y:auto; padding-bottom:90px; padding-top:18px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  #clientScroll::-webkit-scrollbar{display:none;}
+  .px{ padding-left:20px; padding-right:20px; }
+
+  /* Bottom nav */
+  #bottomNav{
+    position:absolute; bottom:0; left:0; right:0; height:78px;
+    background:rgba(255,250,247,0.96); backdrop-filter:blur(6px);
+    border-top:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-around;
+    padding-bottom:10px; z-index:40;
+  }
+  .navItem{ display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:var(--muted); flex:1; }
+  .navItem svg{ width:22px; height:22px; }
+  .navItem span{ font-size:10.5px; font-weight:700; }
+  .navItem.active{ color:var(--rose-600); }
+
+  /* Top bar within screens */
+  .screenTitle{ font-size:22px; font-weight:600; margin:0 0 4px; }
+  .screenSub{ font-size:13px; color:var(--muted); margin:0 0 18px; line-height:1.5;}
+  .backRow{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .backBtn{ width:34px; height:34px; border-radius:50%; background:var(--blush-100); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+  .backBtn svg{ width:16px; height:16px; }
+
+  /* Cards */
+  .card{ background:var(--white); border-radius:var(--radius-md); padding:16px; box-shadow:0 6px 18px -10px rgba(94,54,44,0.18); }
+  .hero-card{
+    position:relative; border-radius:var(--radius-lg); overflow:hidden; color:#fff;
+    background: linear-gradient(180deg, rgba(59,42,38,0.05) 0%, rgba(40,26,22,0.78) 78%), var(--rose-400);
+    min-height:230px; display:flex; flex-direction:column; justify-content:flex-end; padding:20px;
+  }
+  .hero-card img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top center; z-index:0; }
+  .hero-card .heroContent{ position:relative; z-index:2; }
+  .hero-eyebrow{ font-size:12px; opacity:.85; margin:0 0 2px; font-weight:600;}
+  .hero-name{ font-size:24px; margin:0 0 2px; font-weight:600; }
+  .hero-role{ font-size:13px; opacity:.9; margin:0; }
+
+  .badgeRow{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .badge{ background:var(--blush-100); color:var(--rose-600); font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:999px; display:flex; align-items:center; gap:5px;}
+  .badge svg{width:13px;height:13px;}
+
+  .btn{
+    border:none; border-radius:16px; padding:15px 18px; font-family:'Manrope',sans-serif;
+    font-weight:700; font-size:14.5px; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform .15s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:linear-gradient(135deg, var(--rose-500), var(--rose-600)); color:#fff; box-shadow:0 10px 22px -10px rgba(176,101,89,0.7); }
+  .btn-secondary{ background:var(--blush-100); color:var(--rose-600); }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); }
+  .btn-sm{ padding:9px 14px; font-size:12.5px; border-radius:12px; width:auto; }
+  .stack{ display:flex; flex-direction:column; gap:10px; }
+
+  .sectionLabel{ font-size:12.5px; font-weight:800; color:var(--muted); text-transform:none; margin:22px 0 10px; }
+
+  .howRow{ display:flex; gap:10px; margin-top:6px; }
+  .howItem{ flex:1; background:var(--blush-050); border-radius:16px; padding:14px 8px; text-align:center; }
+  .howItem .ic{ width:32px; height:32px; border-radius:50%; background:var(--blush-200); display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+  .howItem svg{ width:16px; height:16px; color:var(--rose-600); }
+  .howItem span{ font-size:11px; font-weight:700; color:var(--ink-soft); line-height:1.3; display:block; }
+
+  /* Country list */
+  .searchBox{ background:var(--blush-050); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .searchBox input{ border:none; background:transparent; outline:none; font-size:14px; width:100%; font-family:'Manrope',sans-serif; color:var(--ink); }
+  .searchBox svg{ width:16px; height:16px; color:var(--muted); flex-shrink:0; }
+  .countryRow{ display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .countryRow:last-child{ border-bottom:none; }
+  .flag{ font-size:22px; width:30px; text-align:center; }
+  .countryName{ font-weight:700; font-size:14px; }
+  .countryTz{ font-size:12px; color:var(--muted); }
+  .radio{ width:20px; height:20px; border-radius:50%; border:2px solid var(--line); margin-left:auto; flex-shrink:0; position:relative; }
+  .radio.checked{ border-color:var(--rose-500); }
+  .radio.checked::after{ content:''; position:absolute; inset:3px; border-radius:50%; background:var(--rose-500); }
+  .tzNote{ margin-top:16px; background:var(--blush-050); border-radius:14px; padding:12px 14px; font-size:12.5px; color:var(--ink-soft); display:flex; gap:8px; align-items:flex-start; }
+  .tzNote svg{ width:15px; height:15px; color:var(--rose-500); flex-shrink:0; margin-top:1px;}
+
+  /* Calendar */
+  .calHead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .calHead button{ background:var(--blush-100); border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .calHead button svg{ width:14px; height:14px; }
+  .calMonth{ font-weight:700; font-size:14.5px; }
+  .calGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+  .calDow{ font-size:10.5px; color:var(--muted); font-weight:700; padding-bottom:6px; }
+  .calDay{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer; position:relative; color:var(--ink-soft); }
+  .calDay.empty{ cursor:default; }
+  .calDay.hasFree:not(.disabled){ color:var(--ink); }
+  .calDay.disabled{ color:#D8CAC4; cursor:not-allowed; }
+  .calDay.selected{ background:var(--rose-500); color:#fff !important; }
+  .calDay .dot{ position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--rose-400); }
+  .calDay.selected .dot{ background:#fff; }
+  .calDay.today:not(.selected){ box-shadow:inset 0 0 0 1.5px var(--rose-300, var(--rose-400)); }
+
+  .slotLabel{ font-size:13px; font-weight:700; margin:18px 0 10px; }
+  .slotGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .slot{ padding:11px 4px; border-radius:12px; text-align:center; font-size:13px; font-weight:700; cursor:pointer; background:var(--blush-050); color:var(--ink); border:1.5px solid transparent;}
+  .slot.busy{ background:#F3EDEA; color:#C9BAB3; cursor:not-allowed; text-decoration:line-through; }
+  .slot.selected{ background:var(--rose-500); color:#fff; }
+
+  .infoBox{ background:var(--blush-050); border-radius:14px; padding:12px 14px; display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--ink-soft); margin-top:16px;}
+  .infoBox svg{ width:14px; height:14px; color:var(--rose-500); flex-shrink:0; margin-top:2px;}
+
+  /* Confirm summary */
+  .sumRow{ display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .sumRow:last-child{ border-bottom:none; }
+  .sumRow .l{ color:var(--muted); }
+  .sumRow .r{ font-weight:700; }
+
+  /* Success */
+  .successWrap{ display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:30px; }
+  .successCheck{ width:82px; height:82px; border-radius:50%; background:var(--blush-100); display:flex; align-items:center; justify-content:center; margin-bottom:20px; }
+  .successCheck svg{ width:38px; height:38px; color:var(--rose-600); }
+
+  /* Tabs pill */
+  .pillTabs{ display:flex; background:var(--blush-050); border-radius:14px; padding:4px; margin-bottom:16px; }
+  .pillTabs button{ flex:1; border:none; background:transparent; padding:10px; border-radius:11px; font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; color:var(--ink-soft); cursor:pointer;}
+  .pillTabs button.active{ background:#fff; color:var(--rose-600); box-shadow:0 4px 10px -4px rgba(94,54,44,0.25);}
+
+  .histCard{ background:#fff; border-radius:16px; padding:14px; margin-bottom:10px; box-shadow:0 4px 14px -10px rgba(94,54,44,0.2); }
+  .histTop{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .histDate{ font-weight:700; font-size:13.5px; }
+  .histTime{ font-size:12px; color:var(--muted); }
+  .statusTag{ font-size:10.5px; font-weight:800; padding:4px 9px; border-radius:999px; }
+  .statusTag.confirmed{ background:#E9F1E6; color:var(--green); }
+  .statusTag.done{ background:var(--blush-100); color:var(--rose-600); }
+  .statusTag.cancelled{ background:#F3EDEA; color:#B3A29B; }
+  .histTopic{ font-size:12.5px; color:var(--ink-soft); }
+
+  .matCard{ background:#fff; border-radius:16px; padding:12px; margin-bottom:10px; display:flex; gap:12px; align-items:center; box-shadow:0 4px 14px -10px rgba(94,54,44,0.2);}
+  .matIcon{ width:46px; height:46px; border-radius:12px; background:var(--blush-100); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .matIcon svg{ width:22px; height:22px; color:var(--rose-600); }
+  .matTitle{ font-size:13.5px; font-weight:700; margin:0 0 2px; }
+  .matMeta{ font-size:11.5px; color:var(--muted); }
+  .matBtn{ width:36px; height:36px; border-radius:50%; background:var(--blush-050); border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .matBtn svg{ width:16px; height:16px; color:var(--rose-600); }
+
+  .profHead{ display:flex; flex-direction:column; align-items:center; margin-bottom:20px; }
+  .avatarLg{ width:84px; height:84px; border-radius:50%; object-fit:cover; margin-bottom:10px; border:3px solid #fff; box-shadow:0 6px 16px -6px rgba(94,54,44,0.4); }
+  .field{ margin-bottom:14px; }
+  .field label{ font-size:11.5px; font-weight:800; color:var(--muted); display:block; margin-bottom:5px; }
+  .field input, .field textarea{ width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 13px; font-family:'Manrope',sans-serif; font-size:13.5px; color:var(--ink); outline:none; background:#fff; }
+  .field textarea{ resize:none; min-height:64px; }
+  .field input:focus, .field textarea:focus{ border-color:var(--rose-400); }
+
+  .linkList{ background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 14px -10px rgba(94,54,44,0.2); }
+  .linkRow{ display:flex; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .linkRow:last-child{ border-bottom:none; }
+  .linkRow .ic{ width:34px; height:34px; border-radius:10px; background:var(--blush-050); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .linkRow .ic svg{ width:16px; height:16px; color:var(--rose-600); }
+  .linkRow span{ font-size:13.5px; font-weight:700; flex:1; }
+  .linkRow .chev{ width:14px; height:14px; color:var(--muted); }
+
+  .statTile{ background:#fff; border-radius:14px; padding:12px; text-align:center; box-shadow:0 4px 14px -10px rgba(94,54,44,0.18);}
+  .statTile b{ display:block; font-size:17px; font-family:'Fraunces',serif; font-weight:600; }
+  .statTile span{ font-size:10px; color:var(--muted); font-weight:700; }
+  .statGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0; }
+
+  .toast{ position:fixed; bottom:110px; left:50%; transform:translateX(-50%) translateY(20px); background:#2C1E1A; color:#fff; padding:12px 20px; border-radius:14px; font-size:13px; font-weight:600; opacity:0; transition:all .25s ease; z-index:1000; pointer-events:none; max-width:320px; text-align:center;}
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .payRow{ display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--line); }
+  .payRow:last-child{ border-bottom:none; }
+  .payIcon{ width:32px; height:32px; border-radius:8px; background:var(--blush-050); display:flex; align-items:center; justify-content:center; font-size:15px;}
+
+  /* ================= ADMIN DASHBOARD ================= */
+  #adminFrame{ width:100%; max-width:960px; }
+  .adminHeader{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:14px;}
+  .adminHeaderLeft{ display:flex; align-items:center; gap:12px; }
+  .adminHeaderLeft img{ width:48px; height:48px; border-radius:50%; object-fit:cover; }
+  .adminTitle{ font-size:20px; font-weight:600; margin:0; }
+  .adminSub{ font-size:12.5px; color:var(--muted); margin:2px 0 0; }
+  .adminTabs{ display:flex; gap:8px; background:#fff; padding:5px; border-radius:14px; box-shadow:0 4px 14px -10px rgba(94,54,44,0.2); }
+  .adminTabs button{ border:none; background:transparent; padding:10px 16px; border-radius:10px; font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; color:var(--ink-soft); cursor:pointer; }
+  .adminTabs button.active{ background:var(--rose-500); color:#fff; }
+
+  .adminGrid{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start; }
+  @media (max-width:760px){ .adminGrid{ grid-template-columns:1fr; } }
+
+  .adStatRow{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px;}
+  @media (max-width:760px){ .adStatRow{ grid-template-columns:repeat(2,1fr);} }
+  .adStat{ background:#fff; border-radius:16px; padding:16px; box-shadow:0 6px 18px -12px rgba(94,54,44,0.25);}
+  .adStat .val{ font-size:22px; font-family:'Fraunces',serif; font-weight:600; }
+  .adStat .lab{ font-size:11.5px; color:var(--muted); font-weight:700; margin-top:2px; }
+  .adStat .delta{ font-size:11px; font-weight:800; color:var(--green); margin-top:6px; display:flex; align-items:center; gap:4px;}
+
+  .adCard{ background:#fff; border-radius:20px; padding:20px; box-shadow:0 6px 20px -14px rgba(94,54,44,0.25); margin-bottom:18px; }
+  .adCard h3{ font-size:15px; margin:0 0 14px; font-weight:700; font-family:'Manrope',sans-serif; }
+
+  .adCalGrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; text-align:center; }
+  .adCalDay{ aspect-ratio:1; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; font-size:13px; font-weight:700; color:var(--ink-soft); position:relative; gap:2px;}
+  .adCalDay.empty{ cursor:default; }
+  .adCalDay.selected{ background:var(--rose-500); color:#fff; }
+  .adCalDay .cnt{ font-size:9px; font-weight:800; color:var(--rose-500); }
+  .adCalDay.selected .cnt{ color:#fce9e5; }
+  .adCalDay.today:not(.selected){ box-shadow:inset 0 0 0 1.5px var(--rose-400); }
+
+  .adSlotRow{ display:flex; align-items:center; justify-content:space-between; padding:11px 12px; border-radius:12px; background:var(--blush-050); margin-bottom:8px; }
+  .adSlotRow.busy{ background:#F3EDEA; }
+  .adSlotRow.booked{ background:#FBEAE5; border:1.5px solid var(--rose-300,var(--rose-400)); }
+  .adSlotTime{ font-weight:800; font-size:13.5px; width:56px; }
+  .adSlotInfo{ flex:1; font-size:12px; color:var(--ink-soft); }
+  .adSlotInfo b{ display:block; font-size:12.5px; color:var(--ink); }
+  .miniBtn{ border:none; border-radius:9px; padding:7px 11px; font-size:11.5px; font-weight:800; cursor:pointer; font-family:'Manrope',sans-serif; }
+  .miniBtn.block{ background:#fff; color:var(--rose-600); }
+  .miniBtn.unblock{ background:#fff; color:var(--green); }
+  .miniBtn.cancel{ background:#fff; color:#C0574B; }
+
+  .bookRowAd{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:14px; background:var(--blush-050); margin-bottom:8px; }
+  .bookRowAd .d{ width:52px; text-align:center; }
+  .bookRowAd .d b{ display:block; font-size:16px; font-family:'Fraunces',serif;}
+  .bookRowAd .d span{ font-size:10px; color:var(--muted); font-weight:700; }
+  .bookRowAd .mid{ flex:1; }
+  .bookRowAd .mid b{ font-size:13px; display:block; }
+  .bookRowAd .mid span{ font-size:11.5px; color:var(--muted); }
+
+  .incRow{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); }
+  .incRow:last-child{ border-bottom:none; }
+  .incRow .l b{ display:block; font-size:13px; }
+  .incRow .l span{ font-size:11.5px; color:var(--muted); }
+  .incRow .amt{ font-weight:800; font-size:14px; color:var(--green); }
+  .incRow .amt.neg{ color:#C0574B; }
+  .incActions{ display:flex; gap:6px; margin-left:10px; }
+  .iconBtn{ width:26px; height:26px; border-radius:8px; border:none; background:var(--blush-100); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .iconBtn svg{ width:12px; height:12px; color:var(--rose-600); }
+
+  .formRow{ display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:8px; align-items:end; }
+  @media (max-width:760px){ .formRow{ grid-template-columns:1fr 1fr; } }
+  .formRow .field{ margin-bottom:0; }
+  .formRow input{ width:100%; border:1.5px solid var(--line); border-radius:11px; padding:10px 12px; font-family:'Manrope',sans-serif; font-size:13px; outline:none; }
+
+  .barChart{ display:flex; align-items:flex-end; gap:8px; height:120px; margin-top:6px; }
+  .barChart .bar{ flex:1; background:linear-gradient(180deg,var(--rose-400),var(--rose-600)); border-radius:6px 6px 3px 3px; position:relative; min-height:4px; }
+  .barChart .col{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; gap:6px;}
+  .barChart .col span{ font-size:9.5px; color:var(--muted); font-weight:700; }
+
+  .modalBg{ position:fixed; inset:0; background:rgba(40,26,22,0.45); display:flex; align-items:center; justify-content:center; z-index:2000; padding:20px;}
+  .modalCard{ background:#fff; border-radius:20px; padding:22px; width:100%; max-width:340px; }
+  .modalCard h3{ margin:0 0 14px; font-size:16px; }
+  .hidden{ display:none !important; }
+
+  ::selection{ background:var(--blush-200); }
+</style>
+<style>
+  body{ background:#EDE0DA; align-items:flex-start; padding:20px 14px 60px; }
+  #adminFrame{ width:100%; max-width:960px; margin:0 auto; }
+  .authBanner{ background:#F3EDEA; color:#8B6F6A; font-size:12px; text-align:center; padding:10px; border-radius:12px; margin-bottom:14px; }
+</style>
 </head>
 <body>
-<div class="app" id="app-root">
-
-  <div id="access-denied" class="access-denied" style="display:none">
-    <div style="font-size:40px;margin-bottom:10px">🔒</div>
-    <div>Эта страница доступна только администратору</div>
+<div id="adminFrame">
+  <div id="authBanner" class="authBanner hidden">Не удалось подтвердить, что вы администратор. Откройте эту страницу через кнопку в боте.</div>
+  <div id="deniedBox" class="hidden" style="text-align:center; padding:60px 20px; color:var(--ink-soft);">
+    <h2 style="font-family:'Fraunces',serif;">Доступ только для администратора</h2>
+    <p>Этот telegram-аккаунт не значится в списке администраторов бота.</p>
   </div>
-
-  <div id="admin-content" style="display:none">
-
-    <section class="screen active" id="screen-schedule">
-      <div class="topbar"><div class="title">Моё расписание</div><div></div></div>
-      <p style="color:var(--muted);font-size:12.5px;margin:0 0 12px">Нажмите на свободное время, чтобы закрыть его (например, если вы заняты) — клиенты не смогут его выбрать. Повторное нажатие снова откроет время.</p>
-
-      <div class="card">
-        <div class="calendar-head">
-          <button class="calendar-nav" onclick="AdminCal.prevMonth()">‹</button>
-          <div class="month-label" id="a-cal-month-label"></div>
-          <button class="calendar-nav" onclick="AdminCal.nextMonth()">›</button>
-        </div>
-        <div class="calendar-grid" id="a-cal-grid"></div>
-      </div>
-
-      <div class="card" id="a-day-card" style="display:none">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px" id="a-day-title"></div>
-        <div id="a-day-slots"></div>
-        <div class="add-slot-row">
-          <input type="time" id="a-new-time" step="600" />
-          <button class="btn btn-primary btn-sm" onclick="AdminCal.addSlot()">+ Добавить время</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="screen" id="screen-clients">
-      <div class="topbar"><div class="title">Клиенты</div><div></div></div>
-      <input class="search-input" id="client-search" placeholder="Поиск по имени..." oninput="Clients.search()" />
-      <div id="clients-list"><div class="loader">Загрузка…</div></div>
-    </section>
-
-    <section class="screen" id="screen-client-detail">
-      <div class="topbar"><button class="back" onclick="AdminNav.go('clients')">←</button><div class="title" id="client-detail-title">Клиент</div><div style="width:34px"></div></div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Добавить динамику (было → стало)</div>
-        <div class="field"><label>Название</label><input id="pn-title" placeholder="Например: постановка звука Р" /></div>
-        <div class="field"><label>Было</label><input id="pn-before" placeholder="Например: звук отсутствовал" /></div>
-        <div class="field"><label>Стало</label><input id="pn-after" placeholder="Например: звук автоматизирован в речи" /></div>
-        <div class="field"><label>Комментарий (необязательно)</label><textarea id="pn-note" placeholder="Дополнительные заметки"></textarea></div>
-        <button class="btn btn-primary btn-sm" onclick="Clients.addProgress()">Добавить запись</button>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Задать домашнее задание</div>
-        <div class="field"><textarea id="hw-text" placeholder="Например: повторять слова со звуком Р по 5 минут в день"></textarea></div>
-        <button class="btn btn-primary btn-sm" onclick="Clients.addHomework()">Отправить задание</button>
-      </div>
-
-      <div class="section-label">История</div>
-      <div id="client-detail-list"><div class="loader">Загрузка…</div></div>
-    </section>
-
-    <section class="screen" id="screen-income">
-      <div class="topbar"><div class="title">Доход</div><div></div></div>
-
-      <div class="card income-total">
-        <div class="amount" id="income-amount">0 ₽</div>
-        <div class="lbl">Общий доход</div>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Скорректировать доход</div>
-        <div class="field"><label>Сумма (можно с минусом)</label><input id="adj-amount" type="number" placeholder="Например, 5000 или -1000" /></div>
-        <div class="field"><label>Комментарий</label><input id="adj-comment" placeholder="За что / почему корректировка" /></div>
-        <button class="btn btn-primary" onclick="Income.addAdjustment()">Добавить корректировку</button>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:10px">История корректировок</div>
-        <div id="adjustments-list"><div class="loader">Загрузка…</div></div>
-      </div>
-    </section>
-  </div>
-
-  <nav class="bottom-nav" id="admin-nav" style="display:none">
-    <button class="nav-btn active" data-tab="schedule" onclick="AdminNav.go('schedule')"><img class="nav-ic" src="/webapp/static/images/icons/icon-calendar.png" alt="" />Расписание</button>
-    <button class="nav-btn" data-tab="clients" onclick="AdminNav.go('clients')"><img class="nav-ic" src="/webapp/static/images/icons/icon-avatar-woman.png" alt="" />Клиенты</button>
-    <button class="nav-btn" data-tab="income" onclick="AdminNav.go('income')"><img class="nav-ic" src="/webapp/static/images/icons/icon-chart-check.png" alt="" />Доход</button>
-  </nav>
+  <div id="adminBody"></div>
 </div>
+<div class="toast" id="toast"></div>
 
-<script src="/webapp/static/admin.js"></script>
+<script>
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+const INIT_DATA = tg && tg.initData ? tg.initData : "";
+if (!INIT_DATA) document.getElementById('authBanner').classList.remove('hidden');
+
+async function api(path, opts={}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'tma ' + INIT_DATA, ...(opts.headers||{}) },
+  });
+  if (!res.ok) { let e; try { e = await res.json(); } catch(_) { e = {}; } throw Object.assign(new Error(e.error || 'request_failed'), {status:res.status, data:e}); }
+  return res.json();
+}
+
+const ICONS = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="#3B2A26" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>',
+};
+const AVATAR_IMG = "data:image/jpeg;base64,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";
+
+function pad(n){ return n<10?'0'+n:''+n; }
+function dkey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmtDate(dstr){
+  const [y,m,d] = dstr.split('-').map(Number);
+  const dt = new Date(y,m-1,d);
+  const months = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  const wd = ['вс','пн','вт','ср','чт','пт','сб'][dt.getDay()];
+  return d+' '+months[m-1]+', '+wd;
+}
+const monthsShort = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const today = new Date(); today.setHours(0,0,0,0);
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+let adminTab = 'dashboard';
+let adminSelectedDate = dkey(today);
+let adminCalOffset = 0;
+const body = document.getElementById('adminBody');
+
+function shell(inner){
+  body.innerHTML = `
+    <div class="adminHeader">
+      <div class="adminHeaderLeft">
+        <img src="${AVATAR_IMG}">
+        <div><h2 class="adminTitle">Панель администратора</h2><p class="adminSub">Татьяна Шумилова · Логопед-дефектолог</p></div>
+      </div>
+      <div class="adminTabs">
+        <button data-t="dashboard" class="${adminTab==='dashboard'?'active':''}">Дашборд</button>
+        <button data-t="calendar" class="${adminTab==='calendar'?'active':''}">Календарь</button>
+        <button data-t="bookings" class="${adminTab==='bookings'?'active':''}">Записи</button>
+        <button data-t="income" class="${adminTab==='income'?'active':''}">Доход</button>
+      </div>
+    </div>
+    <div id="tabBody">${inner}</div>
+  `;
+  body.querySelectorAll('.adminTabs button').forEach(b=>b.addEventListener('click', ()=>{ adminTab=b.dataset.t; renderAdmin(); }));
+}
+
+async function renderAdmin(){
+  shell(`<p style="text-align:center;color:var(--muted);margin-top:40px;">Загрузка...</p>`);
+  try {
+    if(adminTab==='dashboard') await renderDashboard();
+    else if(adminTab==='calendar') await renderCalendar();
+    else if(adminTab==='bookings') await renderBookings();
+    else if(adminTab==='income') await renderIncome();
+  } catch(e){
+    if(e.status===403){ document.getElementById('deniedBox').classList.remove('hidden'); document.getElementById('adminBody').classList.add('hidden'); }
+    else { document.getElementById('tabBody').innerHTML = `<p style="color:var(--muted);text-align:center;margin-top:40px;">Ошибка загрузки данных</p>`; }
+  }
+}
+
+function clientLabel(b){
+  if(b.client_username) return '@'+b.client_username;
+  if(b.client_name) return b.client_name;
+  if(b.client_telegram_id) return 'ID '+b.client_telegram_id;
+  return 'Клиент';
+}
+function bookRowHTML(b){
+  const [y,m,d] = b.date.split('-');
+  return `
+    <div class="bookRowAd">
+      <div class="d"><b>${Number(d)}</b><span>${monthsShort[Number(m)-1]}</span></div>
+      <div class="mid"><b>${b.time} · ${clientLabel(b)}</b><span>${b.topic||'Занятие'} · ${b.country||''} ${b.timezone||''}</span></div>
+      <span class="statusTag ${b.status==='confirmed'?'confirmed':(b.status==='done'?'done':'cancelled')}">${b.status==='confirmed'?'Подтверждено':(b.status==='done'?'Завершено':'Отменено')}</span>
+    </div>`;
+}
+
+async function renderDashboard(){
+  const [slotsResp, bookings, income] = await Promise.all([
+    api(`/api/admin/slots?year=${today.getFullYear()}&month=${today.getMonth()+1}`),
+    api('/api/admin/bookings'),
+    api('/api/admin/income'),
+  ]);
+  const upcoming = bookings.filter(b=>b.status==='confirmed').sort((a,b)=>a.date.localeCompare(b.date));
+  const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate()+7);
+  const weekBookings = upcoming.filter(b=>b.date>=dkey(today) && b.date<=dkey(weekEnd));
+  const next = upcoming[0];
+
+  function monthIncome(offset){
+    const d = new Date(today.getFullYear(), today.getMonth()+offset, 1);
+    return income.filter(i=>{ const [y,m]=i.date.split('-').map(Number); return y===d.getFullYear() && (m-1)===d.getMonth(); }).reduce((s,i)=>s+i.amount,0);
+  }
+  const thisMonth = monthIncome(0), lastMonth = monthIncome(-1);
+  const delta = lastMonth? Math.round((thisMonth-lastMonth)/lastMonth*100) : 0;
+  const allTime = income.reduce((s,i)=>s+i.amount,0);
+
+  const vals = [];
+  for(let i=5;i>=0;i--){ vals.push({label: monthsShort[new Date(today.getFullYear(),today.getMonth()-i,1).getMonth()], val: monthIncome(-i)}); }
+  const max = Math.max(...vals.map(v=>v.val),1);
+  const chart = `<div class="barChart">${vals.map(v=>`<div class="col"><div class="bar" style="height:${Math.max(4,v.val/max*100)}%;" title="${v.val} ₽"></div><span>${v.label}</span></div>`).join('')}</div>`;
+
+  document.getElementById('tabBody').innerHTML = `
+    <div class="adStatRow">
+      <div class="adStat"><div class="val">${thisMonth.toLocaleString('ru-RU')} ₽</div><div class="lab">Доход за месяц</div>${lastMonth? `<div class="delta">${ICONS.up} ${delta>=0?'+':''}${delta}% к прошлому</div>`:''}</div>
+      <div class="adStat"><div class="val">${weekBookings.length}</div><div class="lab">Записей на неделе</div></div>
+      <div class="adStat"><div class="val">${next? next.time : '—'}</div><div class="lab">${next? fmtDate(next.date) : 'Нет ближайших занятий'}</div></div>
+      <div class="adStat"><div class="val">${allTime.toLocaleString('ru-RU')} ₽</div><div class="lab">Доход всего</div></div>
+    </div>
+    <div class="adminGrid">
+      <div class="adCard"><h3>Записи на ближайшие дни</h3>${upcoming.slice(0,6).map(bookRowHTML).join('') || '<p style="color:var(--muted);font-size:13px;">Пока нет записей</p>'}</div>
+      <div class="adCard"><h3>Доход по месяцам</h3>${chart}</div>
+    </div>`;
+}
+
+async function renderCalendar(){
+  const base = new Date(today.getFullYear(), today.getMonth()+adminCalOffset, 1);
+  const slotsResp = await api(`/api/admin/slots?year=${base.getFullYear()}&month=${base.getMonth()+1}`);
+  const firstDow = (base.getDay()+6)%7;
+  const daysInMonth = new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+  let cells = '';
+  for(let i=0;i<firstDow;i++) cells += `<div class="adCalDay empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dt = new Date(base.getFullYear(), base.getMonth(), d);
+    const key = dkey(dt);
+    const dayHours = slotsResp.days[key] || {};
+    const bookedCount = Object.values(dayHours).filter(v=>v==='booked').length;
+    const isSel = adminSelectedDate===key;
+    const isToday = dkey(today)===key;
+    cells += `<div class="adCalDay ${isSel?'selected':''} ${isToday?'today':''}" data-key="${key}">${d}${bookedCount? `<span class="cnt">${bookedCount}●</span>`:''}</div>`;
+  }
+  const dayHours = slotsResp.days[adminSelectedDate] || {};
+  const daySlots = slotsResp.hours.map(h=>{
+    const st = dayHours[h] || 'free';
+    if(st==='free') return `<div class="adSlotRow"><div class="adSlotTime">${h}</div><div class="adSlotInfo">Свободно</div><button class="miniBtn block" data-act="block" data-h="${h}">${ICONS.lock} Занять</button></div>`;
+    if(st==='blocked') return `<div class="adSlotRow busy"><div class="adSlotTime">${h}</div><div class="adSlotInfo">Занято вами (личное время)</div><button class="miniBtn unblock" data-act="unblock" data-h="${h}">Освободить</button></div>`;
+    const b = (slotsResp.bookings||{})[adminSelectedDate+','+h];
+    return `<div class="adSlotRow booked"><div class="adSlotTime">${h}</div><div class="adSlotInfo"><b>${b? clientLabel(b) : 'Клиент'}</b>${b? `${b.topic||'Занятие'} · ${b.country||''} ${b.timezone||''}`:''}</div><button class="miniBtn cancel" data-act="cancel" data-h="${h}" data-id="${b?b.id:''}">Отменить</button></div>`;
+  }).join('');
+  document.getElementById('tabBody').innerHTML = `
+    <div class="adminGrid">
+      <div class="adCard">
+        <div class="calHead">
+          <button id="calPrev">${ICONS.back}</button>
+          <div class="calMonth">${monthNames[base.getMonth()]} ${base.getFullYear()}</div>
+          <button id="calNext" style="transform:rotate(180deg)">${ICONS.back}</button>
+        </div>
+        <div class="adCalGrid">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div class="calDow">${d}</div>`).join('')}${cells}</div>
+      </div>
+      <div class="adCard"><h3>Слоты на ${fmtDate(adminSelectedDate)}</h3>${daySlots}</div>
+    </div>`;
+  document.getElementById('calPrev').addEventListener('click', ()=>{ adminCalOffset--; renderAdmin(); });
+  document.getElementById('calNext').addEventListener('click', ()=>{ adminCalOffset++; renderAdmin(); });
+  document.querySelectorAll('.adCalDay[data-key]').forEach(el=>el.addEventListener('click', ()=>{ adminSelectedDate = el.dataset.key; renderAdmin(); }));
+  document.querySelectorAll('.miniBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const h = btn.dataset.h, act = btn.dataset.act;
+      try {
+        if(act==='block'){ await api('/api/admin/slots/block', {method:'POST', body: JSON.stringify({date:adminSelectedDate, time:h})}); toast('Слот отмечен как занятый'); }
+        if(act==='unblock'){ await api('/api/admin/slots/unblock', {method:'POST', body: JSON.stringify({date:adminSelectedDate, time:h})}); toast('Слот снова свободен'); }
+        if(act==='cancel'){ await api(`/api/admin/bookings/${btn.dataset.id}/cancel`, {method:'POST'}); toast('Запись отменена, слот освобождён'); }
+        renderAdmin();
+      } catch(e){ toast('Не удалось выполнить действие'); }
+    });
+  });
+}
+
+async function renderBookings(){
+  const list = (await api('/api/admin/bookings')).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('tabBody').innerHTML = `<div class="adCard"><h3>Все записи</h3>${list.map(bookRowHTML).join('') || '<p style="color:var(--muted);font-size:13px;">Пока нет записей</p>'}</div>`;
+}
+
+async function renderIncome(){
+  const income = await api('/api/admin/income');
+  function monthIncome(offset){
+    const d = new Date(today.getFullYear(), today.getMonth()+offset, 1);
+    return income.filter(i=>{ const [y,m]=i.date.split('-').map(Number); return y===d.getFullYear() && (m-1)===d.getMonth(); }).reduce((s,i)=>s+i.amount,0);
+  }
+  const allTime = income.reduce((s,i)=>s+i.amount,0);
+  const list = income.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('tabBody').innerHTML = `
+    <div class="adStatRow" style="grid-template-columns:repeat(2,1fr);">
+      <div class="adStat"><div class="val">${monthIncome(0).toLocaleString('ru-RU')} ₽</div><div class="lab">За этот месяц</div></div>
+      <div class="adStat"><div class="val">${allTime.toLocaleString('ru-RU')} ₽</div><div class="lab">За всё время</div></div>
+    </div>
+    <div class="adCard">
+      <h3>Добавить запись о доходе</h3>
+      <div class="formRow">
+        <div class="field"><label>Дата</label><input type="date" id="inc_date" value="${dkey(today)}"></div>
+        <div class="field"><label>Сумма, ₽</label><input type="number" id="inc_amount" placeholder="2500"></div>
+        <div class="field"><label>Комментарий</label><input type="text" id="inc_note" placeholder="Например, доп. занятие"></div>
+        <button class="btn btn-primary btn-sm" id="inc_add">Добавить</button>
+      </div>
+    </div>
+    <div class="adCard">
+      <h3>История дохода</h3>
+      ${list.map(i=>`
+        <div class="incRow">
+          <div class="l"><b>${i.note||'Доход'}</b><span>${fmtDate(i.date)} · ${i.source==='booking'?'из записи':'вручную'}</span></div>
+          <div style="display:flex;align-items:center;">
+            <div class="amt">+${i.amount.toLocaleString('ru-RU')} ₽</div>
+            <div class="incActions">
+              <button class="iconBtn" data-act="edit" data-id="${i.id}" data-amount="${i.amount}">${ICONS.edit}</button>
+              <button class="iconBtn" data-act="del" data-id="${i.id}">${ICONS.trash}</button>
+            </div>
+          </div>
+        </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Пока нет записей о доходе</p>'}
+    </div>`;
+  document.getElementById('inc_add').addEventListener('click', async ()=>{
+    const date = document.getElementById('inc_date').value;
+    const amount = Number(document.getElementById('inc_amount').value);
+    const note = document.getElementById('inc_note').value || 'Доход';
+    if(!amount){ toast('Укажите сумму'); return; }
+    try { await api('/api/admin/income', {method:'POST', body: JSON.stringify({date, amount, note})}); toast('Доход добавлен'); renderAdmin(); }
+    catch(e){ toast('Не удалось добавить'); }
+  });
+  document.querySelectorAll('.iconBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.id;
+      if(btn.dataset.act==='del'){
+        try { await api(`/api/admin/income/${id}`, {method:'DELETE'}); toast('Запись удалена'); renderAdmin(); } catch(e){ toast('Не удалось удалить'); }
+      }
+      if(btn.dataset.act==='edit'){
+        const val = prompt('Новая сумма, ₽:', btn.dataset.amount);
+        if(val!==null && !isNaN(Number(val))){
+          try { await api(`/api/admin/income/${id}`, {method:'PATCH', body: JSON.stringify({amount:Number(val)})}); toast('Сумма скорректирована'); renderAdmin(); }
+          catch(e){ toast('Не удалось сохранить'); }
+        }
+      }
+    });
+  });
+}
+
+renderAdmin();
+</script>
 </body>
 </html>

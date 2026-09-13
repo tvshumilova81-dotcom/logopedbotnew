@@ -1,46 +1,27 @@
 from __future__ import annotations
 
 from aiogram.types import User as TgUser
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models.user import User
 
 
-async def list_users(session: AsyncSession, search: str | None = None, limit: int = 200) -> list[User]:
-    query = select(User).order_by(User.created_at.desc()).limit(limit)
-    if search:
-        like = f"%{search.lower()}%"
-        query = select(User).where(
-            func.lower(func.coalesce(User.parent_name, "")).like(like)
-            | func.lower(func.coalesce(User.child_name, "")).like(like)
-            | func.lower(func.coalesce(User.username, "")).like(like)
-        ).order_by(User.created_at.desc()).limit(limit)
-    result = await session.execute(query)
-    return list(result.scalars().all())
-
-
 async def get_or_create_user(session: AsyncSession, tg_user: TgUser) -> User:
-    return await get_or_create_user_by_id(session, tg_user.id, tg_user.username)
-
-
-async def get_or_create_user_by_id(
-    session: AsyncSession, telegram_id: int, username: str | None
-) -> User:
     result = await session.execute(
-        select(User).where(User.telegram_id == telegram_id)
+        select(User).where(User.telegram_id == tg_user.id)
     )
     user = result.scalar_one_or_none()
     if user is None:
         user = User(
-            telegram_id=telegram_id,
-            username=username,
+            telegram_id=tg_user.id,
+            username=tg_user.username,
         )
         session.add(user)
         await session.commit()
         await session.refresh(user)
-    elif username and user.username != username:
-        user.username = username
+    elif user.username != tg_user.username:
+        user.username = tg_user.username
         await session.commit()
     return user
 
